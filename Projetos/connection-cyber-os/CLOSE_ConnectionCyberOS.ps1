@@ -21,3 +21,28 @@ git commit -m "Sessão encerrada em $(Get-Date -Format 'dd/MM/yyyy HH:mm') | Aut
 git push origin main
 
 Write-Host "`n[OK] Sessão protegida fisicamente e na nuvem." -ForegroundColor Green
+
+# Script de Mapeamento ConnectionCyberOS
+# Local: E:\Projetos\connection-cyber-os\GENERATE_STRUCTURE.ps1
+
+$path = "E:\Projetos\connection-cyber-os"
+$outputFile = "$path\PROJECT_STRUCTURE.md"
+
+$header = @"
+# 🏗️ ESTRUTURA DO PROJETO: CONNECTION CYBER OS
+> Última atualização: $(Get-Date -Format "dd/MM/yyyy HH:mm:ss")
+> Escopo: Todo o diretório raiz
+
+---
+"@
+
+$header | Out-File -FilePath $outputFile -Encoding utf8
+
+# Gera a árvore ignorando pastas de cache e dependências pesadas
+Get-ChildItem -Path $path -Recurse | 
+    Where-Object { $_.FullName -notmatch "node_modules|\.next|\.git|out" } |
+    Select-Object @{Name="RelativePath"; Expression={$_.FullName.Replace($path, "")}} |
+    ForEach-Object { " - $($_.RelativePath)" } | 
+    Out-File -FilePath $outputFile -Append -Encoding utf8
+
+Write-Host "✅ PROJECT_STRUCTURE.md atualizado com sucesso em $path" -ForegroundColor Emerald

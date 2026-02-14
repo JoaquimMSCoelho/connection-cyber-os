@@ -1,0 +1,88 @@
+﻿# 🏗️ ESTRUTURA DO PROJETO: CONNECTION CYBER OS
+> Última atualização: 14/02/2026 13:43:22
+> Escopo: Todo o diretório raiz
+
+---
+ - \Sorteio
+ - \web
+ - \AUDIT_ConnectionCyberOS.ps1
+ - \AUDIT_CYBER.ps1
+ - \backup_fisico.ps1
+ - \CHECK_ConnectionCyberOS.ps1
+ - \CHECK_INTEGRITY.ps1
+ - \CLOSE_ConnectionCyberOS.ps1
+ - \CLOSE_SESSION.ps1
+ - \DESIGN_SYSTEM_EXPORT.txt
+ - \Estrutural Geral.txt
+ - \Geral Levantamento.md
+ - \PROJECT_STRUCTURE.md
+ - \START_ConnectionCyberOS.ps1
+ - \START_SESSION.ps1
+ - \Sorteio\erro mobile.jpeg
+ - \Sorteio\participantes_sorteio_12_02_2026.csv
+ - \Sorteio\sorteio_cyber_os_2026-02-12.csv
+ - \web\public
+ - \web\src
+ - \web\.env.local
+ - \web\eslint.config.mjs
+ - \web\next-env.d.ts
+ - \web\next.config.mjs
+ - \web\next.config.ts
+ - \web\package-lock.json
+ - \web\package.json
+ - \web\postcss.config.mjs
+ - \web\README.md
+ - \web\tsconfig.json
+ - \web\tsconfig.tsbuildinfo
+ - \web\public\file.svg
+ - \web\public\globe.svg
+ - \web\public\next.svg
+ - \web\public\vercel.svg
+ - \web\public\window.svg
+ - \web\src\app
+ - \web\src\lib
+ - \web\src\types
+ - \web\src\utils
+ - \web\src\proxy.ts
+ - \web\src\app\(auth)
+ - \web\src\app\(portal)
+ - \web\src\app\checkin
+ - \web\src\app\Nova pasta
+ - \web\src\app\portal
+ - \web\src\app\favicon.ico
+ - \web\src\app\globals.css
+ - \web\src\app\OLD page.tsx
+ - \web\src\app\(auth)\login
+ - \web\src\app\(auth)\login\actions.ts
+ - \web\src\app\(auth)\login\page.tsx
+ - \web\src\app\(portal)\portal
+ - \web\src\app\(portal)\portal\watch
+ - \web\src\app\(portal)\portal\page.tsx
+ - \web\src\app\(portal)\portal\watch\[slug]
+ - \web\src\app\(portal)\portal\watch\actions.ts
+ - \web\src\app\(portal)\portal\watch\LessonCheck.tsx
+ - \web\src\app\(portal)\portal\watch\[slug]\page.tsx
+ - \web\src\app\checkin\[eventId]
+ - \web\src\app\checkin\[eventId]\page.tsx
+ - \web\src\app\portal\sorteio
+ - \web\src\app\portal\sorteio\components
+ - \web\src\app\portal\sorteio\executar
+ - \web\src\app\portal\sorteio\showcase
+ - \web\src\app\portal\sorteio\page.tsx
+ - \web\src\app\portal\sorteio\PROJECT_STRUCTURE.md
+ - \web\src\app\portal\sorteio\components\DrawEngine.tsx
+ - \web\src\app\portal\sorteio\components\ExportData.tsx
+ - \web\src\app\portal\sorteio\components\ParticipantForm.tsx
+ - \web\src\app\portal\sorteio\components\ParticipantList.tsx
+ - \web\src\app\portal\sorteio\components\QRCodeGenerator.tsx
+ - \web\src\app\portal\sorteio\components\SettingsPanel.tsx
+ - \web\src\app\portal\sorteio\executar\page.tsx
+ - \web\src\app\portal\sorteio\showcase\page.tsx
+ - \web\src\lib\hooks
+ - \web\src\lib\utils.ts
+ - \web\src\lib\hooks\useInactivity.ts
+ - \web\src\types\index.ts
+ - \web\src\utils\supabase
+ - \web\src\utils\supabase\client.ts
+ - \web\src\utils\supabase\middleware.ts
+ - \web\src\utils\supabase\server.ts
