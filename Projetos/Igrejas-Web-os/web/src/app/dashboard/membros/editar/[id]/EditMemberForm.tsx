@@ -2,14 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { ArrowLeft, Plus, Loader2, Search, User, MapPin, Briefcase, Camera, Droplets, Church, Activity, Hash } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Archive, Search, User, MapPin, Briefcase, Activity, Camera, Droplets, Church, Hash } from "lucide-react";
 import Link from "next/link";
-import { createMemberAction } from "@/app/dashboard/membros/actions";
+import { updateMemberAction, archiveMemberAction } from "@/app/dashboard/membros/actions";
 import { useFormStatus } from "react-dom";
 
+// MOCKS
 const PROFISSOES_MOCK = ["Administrador", "Advogado", "Autônomo", "Bancário", "Comerciante", "Contador", "Dentista", "Desenvolvedor", "Do lar", "Enfermeiro", "Engenheiro", "Estudante", "Médico", "Motorista", "Professor", "Policial", "Vendedor", "Outros"];
 
-const validaCPF = (cpf: string) => { cpf = cpf.replace(/\D/g, ''); return cpf.length === 11; };
+// UTILITÁRIOS
+const validaCPF = (cpf: string) => { cpf = cpf.replace(/\D/g, ''); return cpf.length === 11; }; 
 
 function calculateTimeBaptized(dateString: string) {
     if (!dateString || dateString.length !== 10) return "---";
@@ -24,6 +26,7 @@ function calculateTimeBaptized(dateString: string) {
     return `${years} anos e ${months} meses`;
 }
 
+// CORES DE STATUS
 const getStatusColor = (status: string) => {
     switch (status) {
         case 'ACTIVE': return "text-[#28A745] border-[#28A745]/50 font-black"; 
@@ -34,24 +37,38 @@ const getStatusColor = (status: string) => {
     }
 };
 
+// COMPONENTES
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <button type="submit" disabled={pending} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-emerald-900/20">
-      {pending ? <><Loader2 className="w-4 h-4 animate-spin" /> Cadastrando...</> : <><Plus className="w-4 h-4" /> Cadastrar Membro</>}
+      {pending ? <><Loader2 className="w-4 h-4 animate-spin" /> Salvando...</> : <><Save className="w-4 h-4" /> Salvar Alterações</>}
     </button>
   );
 }
 
-export default function NewMemberForm() {
+function ArchiveButton() {
+    const { pending } = useFormStatus();
+    return (
+      <button type="submit" disabled={pending} className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-sm font-medium transition-colors border border-red-500/20 hover:border-red-500/50"
+        onClick={(e) => { if (!confirm("Tem certeza?")) e.preventDefault(); }}>
+        {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4" />}
+        Arquivar
+      </button>
+    );
+}
+
+export default function EditMemberForm({ memberId }: { memberId: string }) {
+  const [loading, setLoading] = useState(true);
+  const [member, setMember] = useState<any>(null);
   const [churches, setChurches] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [states, setStates] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
-    birth_date: "", phone: "", cpf: "", rg: "", rg_issuer: "SSP", rg_state: "SP",
-    nationality_state: "SP", nationality_city: "", ecclesiastical_status: "ACTIVE", photo_url: "",
+    birth_date: "", phone: "", cpf: "", rg: "", rg_issuer: "", rg_state: "",
+    nationality_state: "", nationality_city: "", ecclesiastical_status: "ACTIVE", photo_url: "",
     marriage_date: "", baptism_date: "", origin_church: "", church_id: "", role_id: "", registration_number: "",
     spouse_name: "", father_name: "", mother_name: ""
   });
@@ -71,10 +88,34 @@ export default function NewMemberForm() {
       if (churchesRes.data) setChurches(churchesRes.data);
       if (rolesRes.data) setRoles(rolesRes.data);
       fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome").then(res => res.json()).then(data => setStates(data));
-      fetchCities("SP");
+
+      const { data: memberData } = await supabase.from("members").select("*").eq("id", memberId).single();
+
+      if (memberData) {
+          setMember(memberData);
+          setFormData({
+            ...memberData,
+            birth_date: memberData.birth_date || "", phone: memberData.phone || "", cpf: memberData.cpf || "",
+            rg: memberData.rg || "", rg_issuer: memberData.rg_issuer || "SSP", rg_state: memberData.rg_state || "SP",
+            nationality_state: memberData.nationality_state || "SP", nationality_city: memberData.nationality_city || "",
+            ecclesiastical_status: memberData.ecclesiastical_status || "ACTIVE", photo_url: memberData.photo_url || "",
+            marriage_date: memberData.marriage_date || "", baptism_date: memberData.baptism_date || "",
+            origin_church: memberData.origin_church || "", church_id: memberData.church_id || "", role_id: memberData.role_id || "",
+            registration_number: memberData.registration_number || "",
+            spouse_name: memberData.spouse_name || "", father_name: memberData.father_name || "", mother_name: memberData.mother_name || ""
+          });
+          setAddressData({
+              zip_code: memberData.zip_code || "", address: memberData.address || "",
+              number: memberData.number || "", neighborhood: memberData.neighborhood || "",
+              city: memberData.city || "", state: memberData.state || ""
+          });
+          if(memberData.baptism_date) setTimeBaptized(calculateTimeBaptized(memberData.baptism_date));
+          if(memberData.nationality_state) fetchCities(memberData.nationality_state); else fetchCities("SP");
+      }
+      setLoading(false);
     }
     fetchData();
-  }, []);
+  }, [memberId]);
 
   const fetchCities = async (uf: string) => {
     if (!uf) return;
@@ -92,6 +133,7 @@ export default function NewMemberForm() {
         if(v.length === 10) setTimeBaptized(calculateTimeBaptized(v)); else setTimeBaptized("---");
     }
   };
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "");
     if (v.length > 10) v = v.replace(/(\d{2})(\d{1})(\d{4})(\d{4})/, "($1) $2$3-$4");
@@ -100,6 +142,7 @@ export default function NewMemberForm() {
     else v = v.replace(/(\d*)/, "($1");
     setFormData(prev => ({ ...prev, phone: v }));
   };
+
   const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "");
     v = v.replace(/(\d{3})(\d)/, '$1.$2');
@@ -107,6 +150,7 @@ export default function NewMemberForm() {
     v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
     setFormData(prev => ({ ...prev, cpf: v }));
   };
+
   const handleRGChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "").toUpperCase();
     if (v.length > 1 && v.length <= 4) v = v.replace(/(\d{2})(\d{1,3})/, "$1.$2");
@@ -114,6 +158,7 @@ export default function NewMemberForm() {
     else if (v.length > 7) v = v.replace(/(\d{2})(\d{3})(\d{3})(\d{1})/, "$1.$2.$3-$4");
     setFormData(prev => ({ ...prev, rg: v }));
   };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
@@ -121,17 +166,19 @@ export default function NewMemberForm() {
       if (!file) return;
       const supabase = createClient();
       const fileExt = file.name.split('.').pop();
-      const fileName = `new-${Date.now()}.${fileExt}`;
+      const fileName = `${memberId}-${Date.now()}.${fileExt}`;
       const { error } = await supabase.storage.from('avatars').upload(fileName, file);
       if (error) throw error;
       const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
       setFormData(prev => ({ ...prev, photo_url: data.publicUrl }));
     } catch (error) { alert('Erro no upload'); } finally { setUploading(false); }
   };
+
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const { name, value } = e.target;
       setAddressData(prev => ({ ...prev, [name]: value }));
   };
+
   const handleBlurCep = async (e: React.FocusEvent<HTMLInputElement>) => {
     const cep = e.target.value.replace(/\D/g, '');
     if (cep.length === 8) {
@@ -139,23 +186,28 @@ export default function NewMemberForm() {
         try {
             const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
             const data = await response.json();
-            if (!data.erro) setAddressData(prev => ({ ...prev, zip_code: cep, address: data.logradouro, neighborhood: data.bairro, city: data.localidade, state: data.uf }));
-        } catch (error) { console.error("Erro CEP:", error); } finally { setLoadingCep(false); }
+            if (!data.erro) {
+                setAddressData(prev => ({ ...prev, zip_code: cep, address: data.logradouro, neighborhood: data.bairro, city: data.localidade, state: data.uf }));
+            }
+        } catch (error) { console.error("Erro CEP:", error); } 
+        finally { setLoadingCep(false); }
     }
   };
+
+  if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin text-neutral-500" /></div>;
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       
-      {/* HEADER NOVO */}
+      {/* HEADER */}
       <div className="grid grid-cols-12 gap-6 pb-6 border-b border-neutral-800 items-center">
         <div className="col-span-12 lg:col-span-3 flex flex-col gap-4">
             <Link href="/dashboard/membros" className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors text-sm w-fit"><ArrowLeft className="w-4 h-4" /> Voltar para Gestão</Link>
-            <div><h1 className="text-2xl font-bold text-white tracking-tight">Novo Membro</h1><p className="text-sm text-neutral-400">Preencha a ficha cadastral.</p></div>
+            <div><h1 className="text-2xl font-bold text-white tracking-tight">{member.full_name}</h1><p className="text-sm text-neutral-400">Edição de Cadastro</p></div>
         </div>
         <div className="col-span-12 lg:col-span-2 lg:col-start-5 flex justify-end pr-4">
             <div className="w-32 h-32 rounded-full bg-neutral-900 border-2 border-dashed border-neutral-700 flex items-center justify-center relative overflow-hidden group hover:border-emerald-500 transition-colors shadow-xl">
-                {formData.photo_url ? <img src={formData.photo_url} alt="Foto" className="w-full h-full object-cover" /> : <div className="flex flex-col items-center gap-1 text-neutral-500 group-hover:text-emerald-500">{uploading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Camera className="w-8 h-8" />}<span className="text-[10px] font-bold uppercase">Foto</span></div>}
+                {formData.photo_url ? (<img src={formData.photo_url} alt="Foto" className="w-full h-full object-cover" />) : (<div className="flex flex-col items-center gap-1 text-neutral-500 group-hover:text-emerald-500">{uploading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Camera className="w-8 h-8" />}<span className="text-[10px] font-bold uppercase">Foto</span></div>)}
                 <input type="file" accept="image/*" onChange={handlePhotoUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
             </div>
         </div>
@@ -163,7 +215,7 @@ export default function NewMemberForm() {
             <div className="grid grid-cols-12 gap-3 items-end">
                 <div className="col-span-6"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Church className="w-3 h-3 text-emerald-500"/> Igreja Atual</label><select name="church_id" value={formData.church_id} onChange={(e) => setFormData({...formData, church_id: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white cursor-pointer focus:border-emerald-500 outline-none text-xs"><option value="">Selecione...</option>{churches.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
                 <div className="col-span-6"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Briefcase className="w-3 h-3 text-emerald-500"/> Cargo</label><select name="role_id" value={formData.role_id} onChange={(e) => setFormData({...formData, role_id: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white cursor-pointer focus:border-emerald-500 outline-none text-xs"><option value="">Selecione...</option>{roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
-                <div className="col-span-4"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Hash className="w-3 h-3 text-yellow-500"/> Matrícula</label><input name="registration_number" type="text" placeholder="Auto" value="" readOnly className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2 text-yellow-500 font-mono text-center text-xs outline-none" /></div>
+                <div className="col-span-4"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Hash className="w-3 h-3 text-yellow-500"/> Matrícula</label><input name="registration_number" type="text" placeholder="Auto" value={formData.registration_number || "---"} readOnly className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2 text-yellow-500 font-mono text-center text-xs outline-none" /></div>
                 <div className="col-span-4"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Droplets className="w-3 h-3 text-cyan-500"/> Batismo</label><input name="baptism_date" type="text" placeholder="DD/MM/AAAA" value={formData.baptism_date} onChange={(e) => handleDateChange(e, 'baptism_date')} maxLength={10} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white text-center focus:border-cyan-500 outline-none text-xs" /></div>
                 <div className="col-span-4"><label className="text-[10px] uppercase text-neutral-500 font-bold mb-1 block">Tempo</label><div className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-cyan-500 font-bold text-xs border-l-2 border-l-cyan-500/50 truncate">{timeBaptized}</div></div>
             </div>
@@ -171,7 +223,8 @@ export default function NewMemberForm() {
       </div>
 
       {/* FORMULÁRIO ÚNICO */}
-      <form action={createMemberAction} className="space-y-6">
+      <form action={updateMemberAction} className="space-y-6">
+        <input type="hidden" name="id" value={member.id} />
         <input type="hidden" name="photo_url" value={formData.photo_url} />
         <input type="hidden" name="baptism_date" value={formData.baptism_date} />
         <input type="hidden" name="church_id" value={formData.church_id} />
@@ -181,26 +234,26 @@ export default function NewMemberForm() {
         <div className="space-y-4">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 pb-2"><User className="w-4 h-4 text-emerald-500" /> Dados Pessoais</h2>
             <div className="grid grid-cols-12 gap-4">
-                <div className="col-span-12 md:col-span-4"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Nome do Membro</label><input name="full_name" type="text" required placeholder="Nome Completo" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white focus:border-emerald-500 outline-none" /></div>
-                <div className="col-span-6 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Data Nasc.</label><input name="birth_date" type="text" placeholder="DD/MM/AAAA" value={formData.birth_date} onChange={(e) => handleDateChange(e, 'birth_date')} maxLength={10} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-center" /></div>
-                <div className="col-span-6 md:col-span-1"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Sexo</label><select name="gender" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-center"><option value="M">M</option><option value="F">F</option></select></div>
-                <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Estado Civil</label><select name="civil_status" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white"><option value="SOLTEIRO">Solteiro</option><option value="CASADO">Casado</option></select></div>
-                <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Profissão</label><select name="profession" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white"><option>Selecione...</option>{PROFISSOES_MOCK.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
+                <div className="col-span-12 md:col-span-4"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Nome do Membro</label><input name="full_name" type="text" required defaultValue={member.full_name} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white focus:border-emerald-500 outline-none" /></div>
+                <div className="col-span-6 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Data Nasc.</label><input name="birth_date" type="text" value={formData.birth_date} onChange={(e) => handleDateChange(e, 'birth_date')} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-center" /></div>
+                <div className="col-span-6 md:col-span-1"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Sexo</label><select name="gender" defaultValue={member.gender} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-center"><option value="M">M</option><option value="F">F</option></select></div>
+                <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Estado Civil</label><select name="civil_status" defaultValue={member.civil_status} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white"><option value="SOLTEIRO">Solteiro(a)</option><option value="CASADO">Casado(a)</option><option value="DIVORCIADO">Divorciado(a)</option><option value="VIUVO">Viúvo(a)</option></select></div>
+                <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Profissão</label><select name="profession" defaultValue={member.profession} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white"><option>Selecione...</option>{PROFISSOES_MOCK.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
             </div>
             
             <div className="grid grid-cols-12 gap-4">
-                <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">E-mail</label><input name="email" type="text" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
+                <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">E-mail</label><input name="email" type="text" defaultValue={member.email} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
                 <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Telefone</label><input name="phone" type="text" value={formData.phone} onChange={handlePhoneChange} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
                 <div className="col-span-12 md:col-span-3">
-                    <label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Naturalidade (UF / Cidade)</label>
+                    <label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Naturalidade</label>
                     <div className="flex gap-2">
                         <select name="nationality_state" value={formData.nationality_state} onChange={(e) => setFormData({...formData, nationality_state: e.target.value})} className="w-20 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option>UF</option>{states.map((s:any)=><option key={s.id} value={s.sigla}>{s.sigla}</option>)}</select>
                         <select name="nationality_city" value={formData.nationality_city} onChange={(e) => setFormData({...formData, nationality_city: e.target.value})} className="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option>{formData.nationality_city || "Cidade"}</option>{cities.map((c:any)=><option key={c.id} value={c.nome}>{c.nome}</option>)}</select>
                     </div>
                 </div>
-                <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Escolaridade</label><select name="schooling" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white"><option>Selecione...</option><option value="MEDIO">Ensino Médio</option><option value="SUPERIOR">Superior</option></select></div>
+                <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Escolaridade</label><select name="schooling" defaultValue={member.schooling} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white"><option>Selecione...</option><option value="MEDIO">Ensino Médio</option><option value="SUPERIOR">Superior</option></select></div>
             </div>
-            
+
             <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">CPF</label><input name="cpf" type="text" value={formData.cpf} onChange={handleCPFChange} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
                 <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">RG</label><input name="rg" type="text" value={formData.rg} onChange={handleRGChange} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
@@ -233,12 +286,13 @@ export default function NewMemberForm() {
             </div>
         </div>
 
+        {/* STATUS */}
         <div className="mt-2">
             <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 flex flex-col xl:flex-row items-center gap-6 justify-between">
                 <div className="flex flex-col sm:flex-row gap-4 w-full xl:w-auto">
                     <div className="flex-1 min-w-[200px]">
                         <label className="text-[10px] text-white uppercase font-bold mb-1 block">Financeiro</label>
-                        <select name="financial_status" defaultValue="PENDING" className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2.5 text-white text-sm focus:border-emerald-500 outline-none cursor-pointer"><option value="UP_TO_DATE">🟢 Em Dia</option><option value="PENDING">🔴 Pendente</option></select>
+                        <select name="financial_status" defaultValue={member.financial_status || "PENDING"} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2.5 text-white text-sm focus:border-emerald-500 outline-none cursor-pointer"><option value="UP_TO_DATE">🟢 Em Dia</option><option value="PENDING">🔴 Pendente</option></select>
                     </div>
                     <div className="flex-1 min-w-[200px]">
                         <label className="text-[10px] text-white uppercase font-bold mb-1 block">Status</label>
@@ -251,6 +305,8 @@ export default function NewMemberForm() {
                     </div>
                 </div>
                 <div className="flex items-center gap-4 w-full xl:w-auto justify-end">
+                    <ArchiveButton />
+                    <div className="h-8 w-px bg-neutral-800 mx-2 hidden sm:block"></div>
                     <SubmitButton />
                 </div>
             </div>
