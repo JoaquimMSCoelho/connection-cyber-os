@@ -1,0 +1,15 @@
+# PROTOCOLO DE EXPORTAÇÃO DE DESIGN SYSTEM (RFC-0017)
+# ORIGEM: {E:\Projetos\connection-cyber-os}
+# VOLUME: {PROJETOS}
+
+1. LOCALIZAÇÃO DOS TOKENS: /web/src/design-system/tokens
+2. COMPONENTES VÁLIDOS:
+   - Button (Emerald Style)
+   - FeatureCard (Glassmorphism)
+   - Input (Backdrop Blur)
+   - LessonCheck (Optimistic UI)
+
+3. PROCEDIMENTO DE EXTRAÇÃO:
+   - Remover dependências de 'use server' específicas de negócio.
+   - Centralizar classes Tailwind em constantes de tema.
+   - Compactar diretórios em 'design-system-export.zip'.

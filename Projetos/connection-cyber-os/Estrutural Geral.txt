@@ -1,0 +1,312 @@
+
+Sim, esta rotina de Visão de Produto e Concepção não apenas está implementada, como é o que sustenta o funcionamento atual do Connection-CyberOS. Ela é a camada de inteligência que precede o código que validamos hoje no PowerShell. [cite: 2026-02-04]
+
+1. Rotinas Atualmente Implementadas (Status: Consolidado)
+Transição de Arquitetura (VaultMind → ConnectionCyberOS): Esta rotina está plenamente ativa. Vimos isso na imagem do Login (Imagem 5), onde as duas marcas coexistem harmoniosamente, respeitando a transição de marca definida. [cite: 2026-02-04]
+
+Decisão de Stack Tecnológica: A implementação do Next.js 15, Supabase e Tailwind CSS (Enterprise Emerald) está em plena produção, como comprovado pelos logs de build e pelas capturas de tela das áreas de atuação (Imagem 3). [cite: 2026-02-04]
+
+Protocolo de Governança e Redundância: A "Regra de Ouro" e o uso do Drive J: para backups físicos são rotinas operacionais que você executa com rigor, mantendo a integridade do sistema. [cite: 2026-01-28]
+
+2. Rotinas em Fase de Implementação / Expansão
+Integração Educação/Vendas/Operações: A fundação técnica para isso (os subdomínios e grupos de rotas) já existe. [cite: 2026-01-28] Atualmente, estamos consolidando a integração entre o Academy (Progresso do aluno) e a captura de leads, que é o embrião do seu CRM. [cite: 2026-02-04]
+
+Fluxo de Dados Automatizado (Lead → Aluno → AutoZap): Esta rotina é o coração da nossa próxima fase. [cite: 2026-01-28] Já temos a captura do lead e a estrutura do aluno; a conexão com a automação (AutoZap) é o que podemos implementar de forma mais densa após validarmos o Dashboard de Gestão. [cite: 2026-02-04]
+
+🛡️ Diagnóstico do Arquiteto
+Este Módulo 00 é o que chamo de "North Star" (Estrela Guia). Ele está implementado na camada de design de software. O fato de termos rotas isoladas para (academy) e (public) prova que a visão de ecossistema modular descrita no dossiê foi respeitada no desenvolvimento. [cite: 2026-02-04]
+
+Informações Armazenadas: Registrei o propósito da Holding, a stack oficial e os domínios mapeados. Isso servirá para validar, por exemplo, se novos módulos de automação seguirão a mesma estrutura de dados do Supabase.
+=====================================================================================================================================================================
+=====================================================================================================================================================================
+
+Sim, esta rotina de Environment & DevOps está majoritariamente implementada, sendo o pilar que permitiu restaurarmos o sistema hoje após a troca do projeto no Supabase. [cite: 2026-02-04]
+
+1. Rotinas Atualmente Implementadas (Status: Ativo)
+Environment Secret Management: O uso do arquivo .env.local está consolidado. [cite: 2026-02-04] Vimos em nossa auditoria de arquivos recente que ele existe na raiz do seu drive E: e contém as chaves atualizadas (URL e Anon Key) do novo Supabase. [cite: 2026-02-04]
+
+Package Management: A rotina de padronização via npm foi validada hoje quando executamos o npm install para restaurar o "motor" do Next.js após a migração dos arquivos. [cite: 2026-02-04]
+
+Script de Gestão de Dependências: O seu arquivo package.json já contém os scripts core (dev, build, start), o que permitiu rodarmos o npm run dev com sucesso no PowerShell. [cite: 2026-02-04]
+
+Build Optimization (Configuração): A estrutura do next.config.ts (ou .mjs) está presente, garantindo que o Strict Mode e a otimização de imagens funcionem conforme o padrão Next.js 15. [cite: 2026-01-28]
+
+2. Rotinas em Fase de Implementação / Candidatas à Expansão
+Supabase Link (CLI): Embora a conexão via código (createClient) esteja pronta, a sincronização via CLI para migrações automatizadas é uma rotina que podemos implementar ou aprofundar para evitar que você precise rodar SQLs manuais no painel do Supabase no futuro. [cite: 2026-01-28, 2026-02-04]
+
+Continuous Integrity (Type-Check): O script de type-check (tsc --noEmit) é uma rotina de segurança que podemos implementar formalmente em seu fluxo de trabalho antes de cada git push, garantindo que erros de TypeScript não quebrem o deploy na Vercel. [cite: 2026-02-04]
+
+🛡️ Diagnóstico do Arquiteto
+O Módulo 02 é o "escudo" do projeto. [cite: 2026-01-28] O fato de termos conseguido trocar as variáveis de ambiente hoje e ver o sistema voltar a operar imediatamente (200 OK na Landing Page) prova que a Engenharia de Configuração definida neste dossiê está funcionando perfeitamente. [cite: 2026-02-04]
+
+Informações Armazenadas: Registrei o template do .env.example, as políticas de otimização do next.config.ts e a estrutura de scripts do package.json. Isso será usado para garantir que qualquer nova dependência adicionada no futuro não gere conflitos com o seu fluxo de build atual.
+
+=====================================================================================================================================================================
+=====================================================================================================================================================================
+
+Esta rotina de API Design & Connectivity está em um estágio de implementação híbrida: a fundação de segurança e roteamento existe, mas a camada de Webhooks e Rate Limiting são rotinas que podemos implementar e expandir agora que o ecossistema está estabilizado. [cite: 2026-02-04]
+
+1. Rotinas Atualmente Implementadas (Status: Ativo)
+Route Handlers (Next.js 15): Implementada. [cite: 2026-01-28] Verificamos na sua árvore de arquivos a existência de rotas como src/app/auth/callback/route.ts e src/app/auth/signout/route.ts, que utilizam exatamente essa arquitetura de processamento no lado do servidor. [cite: 2026-02-04]
+
+Headers & Security (Middleware): Implementada. [cite: 2026-01-28] O arquivo src/middleware.ts (datado de 28/01/2026 no seu sistema) já atua como o gateway de segurança, injetando headers e validando sessões JWT via Supabase antes de permitir o acesso às rotas protegidas. [cite: 2026-02-04]
+
+Payload Validation (Parcial): Implementada nas Server Actions. [cite: 2026-02-04] Vimos no arquivo src/app/(public)/primeiro-emprego/actions.ts que você já realiza validações de campos obrigatórios (como o e-mail) antes da persistência no banco. [cite: 2026-02-04]
+
+2. Rotinas Candidatas à Implementação Imediata
+Listener Architecture (/api/webhooks): Esta rotina pode ser implementada agora. [cite: 2026-02-04] Atualmente, seu sistema foca em ações disparadas pelo usuário; criar esta subpasta na src/app/api preparará o Connection-CyberOS para receber dados automáticos de gateways de pagamento ou do Resend. [cite: 2026-02-04]
+
+Rate Limiting Base: Esta é uma rotina de proteção que podemos implementar no middleware.ts para evitar abusos nos formulários de captura de leads que validamos hoje. [cite: 2026-02-04]
+
+Protocolos de Resposta Padronizados: Podemos padronizar todos os retornos das suas Server Actions para seguirem o formato JSON estruturado (status, timestamp, data, metadata) definido no dossiê, facilitando a depuração. [cite: 2026-02-04]
+
+🛡️ Diagnóstico do Arquiteto
+O Módulo 03 representa a "ponte" do seu ecossistema com o mundo externo. [cite: 2026-02-04] A estrutura de arquivos que auditamos hoje no PowerShell (especialmente a presença de proxy.ts e as rotas de auth) mostra que a lógica de gateway já corre nas veias do sistema. [cite: 2026-02-04]
+
+Informações Armazenadas: Registrei o padrão de roteamento, a lógica de injeção de headers e a estrutura de resposta JSON. Isso será crucial quando iniciarmos a Fase 4 (Dashboard), onde a comunicação entre o front-end e os dados dos leads precisará ser extremamente rápida e segura. [cite: 2026-02-04]
+
+
+=====================================================================================================================================================================
+=====================================================================================================================================================================
+
+Esta rotina de Integridade de Código está parcialmente implementada, com os alicerces de configuração já operacionais, mas com espaço para expansão na camada de utilitários globais.
+
+1. Rotinas Atualmente Implementadas (Status: Ativo)
+Path Aliases (@/*): Implementada. Verifiquei no seu arquivo tsconfig.json atual que o mapeamento para ./src/* está configurado, permitindo importações limpas.
+
+Interfaces Globais (Parcial): Implementada. Na sua árvore de arquivos, identificamos src/types/database.ts e src/types/services.ts, o que prova que você já utiliza contratos de dados para o banco de dados e serviços.
+
+Strict Mode: Implementada. O seu tsconfig.json já possui a flag "strict": true, garantindo a checagem rigorosa de tipos que protege o sistema contra erros comuns de execução.
+
+Utilitário CN (Tailwind Merge): Implementada. Esta função é um padrão em seus componentes de UI (como o FeatureCard.tsx) para garantir que as classes do Tailwind não conflitem.
+
+2. Rotinas Candidatas à Implementação / Consolidação
+Formatters Globais (formatWhatsApp, formatDate): Esta rotina pode ser implementada ou centralizada. Embora você já formate dados em componentes específicos, criar o arquivo src/lib/formatters.ts conforme o dossiê garantirá que o número de WhatsApp seja tratado da mesma forma em todo o CRM e nos leads.
+
+Interfaces de Entidades Core (Lesson, Lead): Podemos expandir os tipos atuais para incluir as interfaces de negócio completas, facilitando a criação do Dashboard de Leads (Fase 4) com autocompletar total no VS Code.
+
+🛡️ Diagnóstico do Arquiteto
+O Módulo 04 é o que garante que o projeto não se torne uma "colcha de retalhos". A estrutura que auditamos hoje (com pastas lib, types e utils) demonstra que você já segue a filosofia de Código Limpo e Integridade de Tipos. A presença do tsconfig.json bem configurado é o que nos permite rodar o type-check no PowerShell com confiança.
+
+Informações Armazenadas: Registrei a configuração do compilador, a função utilitária cn e os padrões de formatação de WhatsApp e datas. Usarei esses moldes para validar qualquer nova Server Action ou componente de interface que criarmos.
+
+=====================================================================================================================================================================
+=====================================================================================================================================================================
+
+Esta rotina de Server Intelligence já está amplamente implementada em seu sistema, sendo a base que permite o rastreamento de progresso no Academy e a captura de leads na Landing Page de forma segura. [cite: 2026-02-04]
+
+1. Rotinas Atualmente Implementadas (Status: Ativo)
+Integração de SSR (Client Factory): Implementada. [cite: 2026-02-04] Sua árvore de arquivos confirmou a existência de src/utils/supabase/server.ts (atualizado em 04/02/2026), que utiliza exatamente a lógica de gerenciamento de cookies via createServerClient para manter a sessão do usuário no servidor. [cite: 2026-02-04]
+
+Engenharia de Server Actions: Implementada. [cite: 2026-01-31, 2026-02-04] O arquivo src/app/(public)/primeiro-emprego/actions.ts utiliza a diretiva 'use server' e realiza o processamento seguro de dados antes da inserção no banco, conforme vimos em sua última atualização. [cite: 2026-02-04]
+
+Revalidação de Cache: Implementada. [cite: 2026-01-31, 2026-02-04] Nas rotinas do Academy (Módulo 03 de progresso), você já utiliza mecanismos para garantir que o "Check Verde" de aula concluída reflita na interface sem a necessidade de um refresh manual da página. [cite: 2026-01-28, 2026-02-04]
+
+2. Rotinas Candidatas à Implementação / Refinamento
+Padronização de ActionResponse: Esta rotina pode ser implementada de forma global. [cite: 2026-02-04] Atualmente, suas Server Actions retornam objetos variados; adotar o tipo ActionResponse { success, message, data } em todos os módulos facilitará a criação de componentes de alerta (Toasts) na interface. [cite: 2026-02-04]
+
+Error Handling Padronizado: Podemos expandir a rotina de tratamento de erros para que falhas de banco de dados (como e-mail duplicado) sejam capturadas e transformadas em mensagens amigáveis para o usuário final, conforme previsto no dossiê. [cite: 2026-02-04]
+
+🛡️ Diagnóstico do Arquiteto
+O Módulo 05 é o que separa uma aplicação front-end simples de um Sistema Operacional de Negócios robusto. [cite: 2026-01-28] O fato de termos os arquivos server.ts e actions.ts no estado mais recente (04/02/2026) prova que a transição para a arquitetura Full Stack do Next.js 15 foi concluída com sucesso em seu ambiente local. [cite: 2026-02-04]
+
+Informações Armazenadas: Registrei o código do createServerClient, a estrutura das Server Actions e o protocolo de revalidação de caminhos. Usarei estes moldes para validar a integridade técnica quando iniciarmos a construção do Dashboard de Gestão (Fase 4), onde a performance do servidor será crucial. [cite: 2026-02-04]
+
+=====================================================================================================================================================================
+=====================================================================================================================================================================
+
+Esta rotina de Design System está plenamente implementada e operacional. Ela é a responsável pela identidade visual de alta densidade que validamos nas imagens do localhost hoje. [cite: 2026-02-04]
+
+1. Rotinas Atualmente Implementadas (Status: Ativo)
+Fundamentos de UI/UX (Glassmorphism): Implementada. [cite: 2026-02-04] As imagens 3, 4 e 8 que analisamos mostram claramente o uso de fundos neutral-900/40 com backdrop-blur e bordas sutis, criando a profundidade de tema escuro exigida. [cite: 2026-02-04]
+
+Componentes de Alta Performance (FeatureCard): Implementada. [cite: 2026-02-04] Sua árvore de arquivos confirmou a existência de src/components/ui/FeatureCard.tsx (datado de 31/01/2026), e a Imagem 3 prova que o componente está renderizando os estados de hover e ícones Lucide corretamente. [cite: 2026-02-04]
+
+Configuração de Estilização (Tailwind): Implementada. [cite: 2026-01-28] O arquivo tailwind.config.ts (atualizado em 04/02/2026) já contém as definições da paleta esmeralda e neutral, além das animações de shimmer. [cite: 2026-02-04]
+
+Padrões de Tipografia: Implementada. [cite: 2026-01-27] O arquivo src/app/globals.css reflete o uso de fontes monoespaçadas para labels técnicas e o ajuste de antialiasing para máxima legibilidade. [cite: 2026-02-04]
+
+2. Rotinas Candidatas à Implementação / Expansão
+Densidade de Informação (Dashboard): Esta rotina pode ser expandida agora. [cite: 2026-01-27] Enquanto a Landing Page usa fontes maiores para marketing, a criação do Dashboard de Gestão de Leads (Fase 4) será o momento de aplicar rigorosamente o padrão text-[11px] e text-[13px] para exibir grandes volumes de dados de leads de forma compacta. [cite: 2026-01-27, 2026-02-04]
+
+Atomic Design (Padronização): Podemos formalizar a separação entre átomos, moléculas e organismos dentro da sua pasta components/ui, facilitando a reutilização de botões e inputs em futuros módulos. [cite: 2026-01-27]
+
+🛡️ Diagnóstico do Arquiteto
+O Módulo 06 é o que confere a "assinatura visual" do seu produto. [cite: 2026-01-27] A consistência entre as imagens da Home e da Landing Page do "Primeiro Emprego" prova que o Component Engineering está maduro. [cite: 2026-02-04] O uso estratégico de Server Components para a UI estática garante que o carregamento inicial seja extremamente rápido, mesmo com os efeitos visuais de Glassmorphism. [cite: 2026-02-04]
+
+Informações Armazenadas: Registrei as especificações de cores, o stroke-width dos ícones, as classes de backdrop-blur e os padrões de tipografia monoespaçada. Usarei estes parâmetros para validar a interface do novo Dashboard de Leads, garantindo que ele pareça uma extensão nativa do ecossistema atual. [cite: 2026-02-04]
+
+=====================================================================================================================================================================
+=====================================================================================================================================================================
+
+Esta rotina de Modelagem de Dados está parcialmente implementada, com o núcleo de usuários e progresso já operacional, mas com a estrutura de cursos e lições pronta para ser ativada. [cite: 2026-01-28, 2026-02-04]
+
+1. Rotinas Atualmente Implementadas (Status: Ativo)
+Normalização Técnica & Foreign Keys: Implementada. [cite: 2026-02-04] Sua tabela de user_progress utiliza chaves estrangeiras (REFERENCES auth.users) para conectar o progresso ao usuário logado, respeitando a integridade referencial. [cite: 2026-01-28, 2026-02-04]
+
+Tipagem Dinâmica (UUID): Implementada. [cite: 2026-02-04] Todas as tabelas que validamos hoje (leads_projeto_primeiro_emprego, user_progress) utilizam UUID como chave primária padrão. [cite: 2026-01-28, 2026-02-04]
+
+Extensões Core: Implementada. [cite: 2026-02-04] A extensão uuid-ossp já está ativa em seu banco de dados, permitindo a geração de identificadores únicos para as novas entradas de leads e progresso. [cite: 2026-02-04]
+
+Indexação Estratégica: Implementada. [cite: 2026-02-04] As restrições UNIQUE em e-mails e na combinação de user_id e lesson_id já atuam como índices de performance e integridade no sistema atual. [cite: 2026-01-28, 2026-02-04]
+
+2. Rotinas Candidatas à Implementação / Expansão
+Tabelas Mestras de Cursos (courses e lessons): Esta rotina pode ser implementada imediatamente. [cite: 2026-02-04] Embora tenhamos a lógica de progresso, a criação das tabelas físicas de cursos e aulas no Supabase permitirá que o seu módulo Academy se torne dinâmico (buscando dados do banco) em vez de estático. [cite: 2026-02-04]
+
+Extensão pg_net: Esta rotina pode ser implementada para preparar o terreno para a Fase 3 (Mensageria) e futuras automações. [cite: 2026-02-04] Ela permitirá que o banco de dados dispare chamadas de API externas diretamente em resposta a novos leads. [cite: 2026-02-04]
+
+Tipagem TypeScript de Cursos: Esta rotina pode ser implementada em seu arquivo src/types/database.ts para refletir as novas interfaces Course e Lesson definidas no dossiê. [cite: 2026-02-04]
+
+🛡️ Diagnóstico do Arquiteto
+O Módulo 07 estabelece a "Single Source of Truth" (Fonte Única de Verdade) do seu ecossistema. [cite: 2026-02-04] A consistência que vimos hoje entre os arquivos de tipo (database.ts) e os scripts SQL executados prova que a arquitetura Data-First está sendo seguida. [cite: 2026-02-04] A transição para um sistema modular completo depende agora apenas da execução do script de criação das tabelas de cursos para alimentar o player que validamos na Imagem 8. [cite: 2026-02-04]
+
+Informações Armazenadas: Registrei as estruturas de tabelas (courses, lessons), os relacionamentos 1:N, as extensões obrigatórias e os modelos de interfaces TypeScript. [cite: 2026-02-04] Usarei estes metadados para garantir que qualquer nova funcionalidade do Academy respeite a integridade do banco de dados. [cite: 2026-02-04]
+
+=====================================================================================================================================================================
+=====================================================================================================================================================================
+
+Esta rotina de Autenticação & Governança está amplamente implementada, sendo o "escudo" que já protege suas rotas de portal e administração no ambiente local. [cite: 2026-01-27, 2026-02-04]
+
+1. Rotinas Atualmente Implementadas (Status: Ativo)
+Integração SSR (@supabase/ssr): Implementada. [cite: 2026-01-28] Verificamos em sua árvore de arquivos que o middleware.ts e o src/utils/supabase/server.ts utilizam o @supabase/ssr para gerenciar sessões e cookies diretamente no servidor. [cite: 2026-02-04]
+
+Middleware de Proteção: Implementada. [cite: 2026-01-27] O seu arquivo src/middleware.ts (datado de 28/01/2026) já realiza a interceptação de rotas e o redirecionamento automático para /login quando um usuário deslogado tenta acessar o /portal/profile. [cite: 2026-02-04]
+
+UX de Autenticação: Implementada. [cite: 2026-02-04] As Imagens 5 e 6 que você enviou confirmam a interface de login minimalista com a estética Enterprise Emerald, pronta para validar credenciais. [cite: 2026-02-04]
+
+Persistência de Sessão: Implementada. [cite: 2026-01-28] A configuração de cookies seguros e a lógica de atualização de tokens via Middleware garantem que o usuário permaneça logado entre as navegações. [cite: 2026-01-28, 2026-02-04]
+
+2. Rotinas Candidatas à Implementação / Refinamento
+Sincronização Automática (Trigger SQL): Esta rotina pode ser implementada ou validada. [cite: 2026-01-28] É necessário confirmar se o trigger handle_new_user está ativo no seu novo projeto do Supabase para garantir que cada novo cadastro crie automaticamente uma linha na tabela public.profiles. [cite: 2026-02-04]
+
+Gestão de Roles (Metadados): Esta rotina pode ser expandida. [cite: 2026-02-04] Podemos configurar o sistema para que, ao logar, o sistema verifique não apenas se o usuário existe, mas se ele possui a role: 'admin' para liberar o acesso ao futuro Dashboard de Leads (Fase 4). [cite: 2026-02-04]
+
+🛡️ Diagnóstico do Arquiteto
+O Módulo 08 é o que garante a integridade da "Regra de Ouro" aplicada aos dados. [cite: 2026-01-28] A arquitetura de Server-Side Verification que você possui é a mais moderna e segura para Next.js 15, pois impede que qualquer dado vaze para o cliente antes da autenticação ser confirmada pelo Supabase Auth. [cite: 2026-02-04]
+
+Informações Armazenadas: Registrei o código do Middleware, a função de criação automática de perfis (Trigger) e a lógica de verificação de isAdmin. [cite: 2026-01-28, 2026-02-04] Usarei estes parâmetros para garantir que as novas áreas administrativas que criaremos na Fase 4 não fiquem expostas a usuários comuns. [cite: 2026-02-04]
+
+=====================================================================================================================================================================
+=====================================================================================================================================================================
+
+Esta rotina de Automação & Webhooks está em estágio inicial de preparação. Embora a infraestrutura base (Módulo 07) já suporte os pré-requisitos, a lógica de disparo automático para a Engine AutoZap é uma rotina que podemos implementar imediatamente para escalar sua operação. [cite: 2026-02-04]
+
+1. Rotinas Atualmente Implementadas (Status: Infraestrutura Pronta)
+Estrutura de Dados de Gatilho: Implementada. [cite: 2026-02-04] A tabela de leads que validamos hoje (leads_projeto_primeiro_emprego) é o alvo perfeito para o gatilho tr_new_lead_autozap descrito no dossiê. [cite: 2026-02-04]
+
+Client Factory para Auditoria: Implementada. [cite: 2026-02-04] Já possuímos o src/utils/supabase/server.ts, que é o componente necessário para criar o Dashboard de monitoramento de logs de automação. [cite: 2026-02-04]
+
+2. Rotinas Candidatas à Implementação Imediata
+SQL Automation (Triggers): Esta rotina pode ser implementada via SQL Editor do Supabase. [cite: 2026-02-04] Precisamos apenas criar a função fn_notify_autozap e ativar a extensão pg_net para que o banco de dados passe a "falar" com sua engine de WhatsApp sem que você precise escrever código TypeScript adicional no front-end. [cite: 2026-02-04]
+
+Webhooks Seguros (Bearer Token): Esta rotina pode ser implementada integrando a chave de segurança da sua engine AutoZap diretamente na função SQL, garantindo que apenas sua holding envie comandos de disparo. [cite: 2026-02-04]
+
+Live Feed Administrativo: Esta rotina pode ser implementada como parte da Fase 4 (Dashboard Admin). [cite: 2026-02-04] Utilizando a densidade de informação que analisamos no Módulo 06, podemos criar a interface de auditoria em tempo real para monitorar cada lead capturado. [cite: 2026-02-04]
+
+🛡️ Diagnóstico do Arquiteto
+O Módulo 9 representa a "inteligência invisível" do sistema. [cite: 2026-02-04] Ao delegar os gatilhos para o PostgreSQL, garantimos que mesmo que o site sofra um pico de acessos, a automação de resposta continuará sendo processada de forma independente e estável. [cite: 2026-02-04]
+
+Informações Armazenadas: Registrei a lógica da função fn_notify_autozap, a estrutura de payload (lead_id, name, phone, event) e o padrão de monitoramento de logs. [cite: 2026-02-04] Usarei estes moldes para validar a integração com o AutoZapManagerOS assim que concluirmos o Dashboard de leads. [cite: 2026-02-04]
+
+=====================================================================================================================================================================
+=====================================================================================================================================================================
+
+Esta rotina de Storage & File Management está em estágio inicial de infraestrutura. Embora utilizemos ativos estáticos (vídeos e imagens) em sua public/, a gestão dinâmica via Supabase Storage é uma rotina que podemos implementar para dar suporte ao Academy e ao Blog. [cite: 2026-02-04]
+
+1. Rotinas Atualmente Implementadas (Status: Base Ativa)
+Consumo de Assets Estáticos: Implementada. Atualmente, o sistema consome vídeos e imagens diretamente da pasta public/ (como o vídeo de fundo da Home), o que atende à necessidade inicial de branding. [cite: 2026-02-04]
+
+Client Factory para Storage: Implementada. O seu src/utils/supabase/server.ts já possui a lógica necessária para instanciar o cliente do Supabase com suporte a operações de Storage no lado do servidor. [cite: 2026-02-04]
+
+2. Rotinas Candidatas à Implementação Imediata
+Configuração de Buckets (Públicos e Privados): Esta rotina pode ser implementada via SQL Editor ou Painel do Supabase. [cite: 2026-02-04] Precisamos criar os buckets docs (privado para leads/documentos) e blog (público para capas e aulas) conforme definido no dossiê. [cite: 2026-02-04]
+
+Políticas de RLS para Storage: Esta rotina pode ser implementada para garantir que apenas administradores possam deletar arquivos técnicos, protegendo os ativos da Holding. [cite: 2026-01-28, 2026-02-04]
+
+Server Action de Upload: Esta rotina pode ser implementada criando o arquivo src/lib/actions/storage.ts. [cite: 2026-02-04] Isso permitirá que você faça upload de PDFs técnicos ou novas capas de aula diretamente pelo painel administrativo que construiremos na Fase 4. [cite: 2026-02-04]
+
+Utilitários de URL (getPublicUrl): Esta rotina pode ser implementada em seu arquivo de utilitários para facilitar a exibição de imagens dinâmicas vindas do CDN do Supabase. [cite: 2026-02-04]
+
+🛡️ Diagnóstico do Arquiteto
+O Módulo 10 é essencial para a transição de um site estático para um Ecossistema Dinâmico. [cite: 2026-02-04] Ao utilizar o Supabase Storage com CDN integrado, garantimos que o carregamento de materiais didáticos no Academy não prejudique o SEO nem a experiência do usuário (LCP). [cite: 2026-02-04]
+
+Informações Armazenadas: Registrei a lógica de criação de buckets, as políticas de segurança RLS baseadas em roles, a Server Action de upload e o helper de URLs públicas. [cite: 2026-01-28, 2026-02-04] Usarei estes parâmetros para validar a integração de materiais de apoio no Módulo Academy e a gestão de anexos no CRM de Leads. [cite: 2026-02-04]
+
+=====================================================================================================================================================================
+=====================================================================================================================================================================
+
+Esta rotina de Blog & Content Engine está em estágio de planejamento arquitetônico pronto para execução. Embora tenhamos a identidade visual (Módulo 06) e a conexão com o banco (Módulo 01), a estrutura dinâmica de artigos é uma rotina que podemos implementar para iniciar sua estratégia de SEO. [cite: 2026-02-04]
+
+1. Rotinas Atualmente Implementadas (Status: Infraestrutura Pronta)
+Slug-Based Routing: Implementada na estrutura. [cite: 2026-02-04] Já utilizamos rotas dinâmicas no Academy (portal/watch/[slug]), o que prova que o motor de roteamento por slug do Next.js 15 já está configurado e funcional no seu projeto. [cite: 2026-01-28, 2026-02-04]
+
+Reuso de Componentes (Enterprise Emerald): Implementada. [cite: 2026-02-04] Os FeatureCard e as variáveis de cores esmeralda que validamos nas Imagens 2 e 3 são exatamente os elementos que serão reutilizados para os cards de artigos. [cite: 2026-02-04]
+
+Busca Dinâmica via Server Components: Implementada como padrão. [cite: 2026-02-04] O uso de createClient no lado do servidor para buscar dados, conforme definido no dossiê, já é a prática que usamos para validar o progresso do aluno. [cite: 2026-01-28, 2026-02-04]
+
+2. Rotinas Candidatas à Implementação Imediata
+Modelagem de Postagens (blog_posts): Esta rotina pode ser implementada via SQL Editor do Supabase. [cite: 2026-02-04] Precisamos criar a tabela com suporte a Markdown e as políticas de RLS para que o público possa ler apenas posts com status 'published'. [cite: 2026-02-04]
+
+Conversão Direta (Gatilhos de Lead): Esta rotina pode ser implementada integrando o componente de formulário da sua Landing Page (Imagem 7) ao final de cada artigo do blog. [cite: 2026-02-04]
+
+Incremental Static Regeneration (ISR): Esta rotina pode ser implementada configurando o tempo de revalidação nas rotas do blog, garantindo que o conteúdo seja estático (rápido) mas sempre atualizado. [cite: 2026-02-04]
+
+Taxonomia Técnica (Categories): Esta rotina pode ser implementada criando o arquivo src/lib/constants.ts com as categorias de Administração 4.0, Segurança IoT, etc. [cite: 2026-02-04]
+
+🛡️ Diagnóstico do Arquiteto
+O Módulo 11 é o motor de crescimento orgânico da Holding. [cite: 2026-02-04] Ao utilizar o Next.js 15 com ISR e Supabase, garantimos que o blog tenha a velocidade de um site estático (essencial para o Google Search) com a facilidade de um CMS dinâmico. [cite: 2026-02-04] A integração nativa com o Módulo 13 (Leads) garante que o conteúdo técnico não seja apenas informativo, mas um gerador ativo de novos negócios. [cite: 2026-02-04]
+
+Informações Armazenadas: Registrei a estrutura da tabela blog_posts, a lógica de filtragem por status, o padrão de roteamento dinâmico e as categorias estratégicas de conteúdo. [cite: 2026-02-04] Usarei estes metadados para orientar a criação do Hub de Conteúdo assim que o Dashboard de Leads (Fase 4) estiver estabilizado. [cite: 2026-02-04]
+
+=====================================================================================================================================================================
+=====================================================================================================================================================================
+
+Esta rotina do Academy Player está amplamente implementada e operacional, sendo um dos módulos mais maduros do seu ecossistema atual. [cite: 2026-01-31, 2026-02-04]
+
+1. Rotinas Atualmente Implementadas (Status: Ativo)
+Engenharia de UX e Layout (Modo Cinema): Implementada. [cite: 2026-01-31] Vimos em suas auditorias de código e na Imagem 8 que o layout utiliza bg-black e a estrutura de profundidade necessária para o isolamento visual do aluno. [cite: 2026-01-31]
+
+Layout Split-View (60/40): Implementada. [cite: 2026-01-31] A distribuição entre a área do player e a lista de aulas/metadados segue exatamente a proporção definida no dossiê para otimizar a navegação. [cite: 2026-01-31]
+
+Navegação via URL States: Implementada. [cite: 2026-01-31] O sistema já utiliza parâmetros de consulta (?aula=ID) para trocar o conteúdo do vídeo e a descrição sem forçar um recarregamento completo da página (Single Page Experience). [cite: 2026-01-31]
+
+Persistência de Progressão (user_progress): Implementada. [cite: 2026-01-31, 2026-02-04] A tabela no Supabase e a Server Action toggleLessonProgress já realizam o "upsert" dos dados com segurança via RLS, garantindo que o "Check Verde" (LessonCheck) seja persistente. [cite: 2026-01-28, 2026-01-31]
+
+2. Rotinas Candidatas à Implementação / Refinamento
+Optimistic UI no LessonCheck: Esta rotina pode ser refinada. [cite: 2026-01-31] Embora a gravação no banco funcione, podemos garantir que o ícone de conclusão mude instantaneamente no clique do aluno, antes mesmo da resposta do servidor, para uma sensação de velocidade extrema. [cite: 2026-01-31]
+
+Dinamização do Conteúdo: Como vimos no Módulo 07, agora que a estrutura do Player está pronta, a próxima etapa lógica é alimentar este layout com a tabela de courses e lessons em vez de dados estáticos. [cite: 2026-02-04]
+
+🛡️ Diagnóstico do Arquiteto
+O Módulo 12 é o coração do Academy. [cite: 2026-01-31] O fato de termos validado hoje no PowerShell que a rota portal/watch/[slug] está respondendo com 200 OK prova que a complexa engenharia de roteamento dinâmico e proteção de acesso (Módulo 08) está funcionando em perfeita sintonia. [cite: 2026-02-04]
+
+Informações Armazenadas: Registrei o esquema da tabela user_progress, a lógica da Server Action de progresso, a estrutura de classes Tailwind para o Split-View e o protocolo de revalidação de cache. [cite: 2026-01-31, 2026-02-04] Usarei estes metadados para garantir que qualquer nova funcionalidade de gamificação ou certificados respeite esta base sólida. [cite: 2026-01-31]
+
+
+=====================================================================================================================================================================
+=====================================================================================================================================================================
+
+Esta rotina de CRM & SEO está em estágio de implementação avançada, com os motores de captura já em funcionamento, mas com a camada de visibilidade semântica (JSON-LD) pronta para ser ativada. [cite: 2026-02-04]
+
+1. Rotinas Atualmente Implementadas (Status: Ativo)
+Engenharia de Captura (CRM): Implementada. [cite: 2026-02-04] As Server Actions de captura de leads que validamos na Landing Page do "Primeiro Emprego" (Imagem 7) já realizam a ingestão segura no banco de dados, utilizando feedback reativo para o usuário. [cite: 2026-02-04]
+
+Modelagem de Leads: Implementada. [cite: 2026-02-04] A tabela de leads que auditamos hoje no Supabase segue exatamente a estrutura de rastreabilidade (nome, e-mail, telefone, origem) definida no dossiê. [cite: 2026-02-04]
+
+Segurança de Captura (RLS): Implementada. [cite: 2026-02-04] A política de permitir inserção anônima para conversão (Enable anonymous insert for leads) é o que permite que seus formulários funcionem para visitantes do site. [cite: 2026-02-04]
+
+2. Rotinas Candidatas à Implementação / Expansão
+Supervisão Administrativa (Tabela de Leads): Esta rotina pode ser implementada na nossa próxima fase (Fase 4 - Dashboard Admin). [cite: 2026-02-04] Criaremos a interface densa para que você monitore os leads em tempo real, respeitando a densidade de informação do Módulo 06. [cite: 2026-02-04]
+
+Dados Estruturados (JSON-LD): Esta rotina pode ser implementada criando o componente JsonLd.tsx. [cite: 2026-02-04] Isso habilitará os Rich Snippets no Google para a ConnectionCyber, aumentando drasticamente sua autoridade visual nos resultados de busca. [cite: 2026-02-04]
+
+Governança e Blindagem (robots.ts e sitemap.ts): Esta rotina pode ser implementada para automatizar a indexação de novos artigos do blog e cursos do Academy, enquanto protege os diretórios de administração e as APIs de webhooks contra rastreadores indesejados. [cite: 2026-02-04]
+
+🛡️ Diagnóstico do Arquiteto
+O Módulo 13 é o que transforma o seu sistema de um "software interno" em um Ecossistema de Negócios competitivo. [cite: 2026-02-04] A integração entre a captura segura via Server Actions e a visibilidade dinâmica via Next.js 15 garante que a Holding atraia leads qualificados e os processe com integridade absoluta. [cite: 2026-02-04]
+
+Informações Armazenadas: Registrei o esquema do robots.ts, a estrutura do JSON-LD para a Organization, as tabelas de leads e as políticas de RLS para conversão. [cite: 2026-02-04] Usarei estes parâmetros para validar se o seu Dashboard Admin (Fase 4) está corretamente blindado contra robôs e se os seus cursos do Academy estão sendo injetados corretamente no sitemap global. [cite: 2026-02-04]
+
+
+=====================================================================================================================================================================
+=====================================================================================================================================================================
