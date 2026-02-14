@@ -22,27 +22,30 @@ git push origin main
 
 Write-Host "`n[OK] Sessão protegida fisicamente e na nuvem." -ForegroundColor Green
 
-# Script de Mapeamento ConnectionCyberOS
-# Local: E:\Projetos\connection-cyber-os\GENERATE_STRUCTURE.ps1
+# --- ROTINA DE ATUALIZACAO DE INVENTARIO (IA) ---
+Write-Host "Mapeando estrutura para PROJECT_STRUCTURE.md..." -ForegroundColor Cyan
+$rootPath = "E:\Projetos\connection-cyber-os"
+$output = "$rootPath\PROJECT_STRUCTURE.md"
 
-$path = "E:\Projetos\connection-cyber-os"
-$outputFile = "$path\PROJECT_STRUCTURE.md"
+# Cabecalho simples
+"PROJETO: CONNECTION CYBER OS" | Out-File $output -Encoding utf8
+"Atualizado em: $(Get-Date)" | Out-File $output -Append -Encoding utf8
+"---" | Out-File $output -Append -Encoding utf8
 
-$header = @"
-# 🏗️ ESTRUTURA DO PROJETO: CONNECTION CYBER OS
-> Última atualização: $(Get-Date -Format "dd/MM/yyyy HH:mm:ss")
-> Escopo: Todo o diretório raiz
+# Geracao da Arvore
+Get-ChildItem -Path $rootPath -Recurse | 
+    Where-Object { $_.FullName -notmatch "node_modules|\\.next|\\.git|out|dist" } |
+    ForEach-Object {
+        $depth = ($_.FullName.Replace($rootPath, "").Split('\').Count - 1)
+        $indent = ""
+        for($i=0; $i -lt $depth; $i++) { $indent += "  " }
+        
+        $tipo = "FILE: "
+        if ($_.PSIsContainer) { $tipo = "DIR: " }
+        
+        $linha = $indent + $tipo + $_.Name
+        $linha | Out-File $output -Append -Encoding utf8
+    }
 
----
-"@
-
-$header | Out-File -FilePath $outputFile -Encoding utf8
-
-# Gera a árvore ignorando pastas de cache e dependências pesadas
-Get-ChildItem -Path $path -Recurse | 
-    Where-Object { $_.FullName -notmatch "node_modules|\.next|\.git|out" } |
-    Select-Object @{Name="RelativePath"; Expression={$_.FullName.Replace($path, "")}} |
-    ForEach-Object { " - $($_.RelativePath)" } | 
-    Out-File -FilePath $outputFile -Append -Encoding utf8
-
-Write-Host "✅ PROJECT_STRUCTURE.md atualizado com sucesso em $path" -ForegroundColor Emerald
+Write-Host "PROJECT_STRUCTURE.md atualizado com sucesso" -ForegroundColor Emerald
+# -----------------------------------------------

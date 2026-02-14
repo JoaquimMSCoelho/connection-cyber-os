@@ -1,6 +1,6 @@
-﻿# 🏗️ ESTRUTURA DO PROJETO: CONNECTION CYBER OS
-> Última atualização: 14/02/2026 13:43:22
-> Escopo: Todo o diretório raiz
+﻿# ðŸ—ï¸ ESTRUTURA DO PROJETO: CONNECTION CYBER OS
+> Ãšltima atualizaÃ§Ã£o: 14/02/2026 13:45:17
+> Escopo: Todo o diretÃ³rio raiz
 
 ---
  - \Sorteio
