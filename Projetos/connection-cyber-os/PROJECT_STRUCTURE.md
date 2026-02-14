@@ -1,88 +1,86 @@
-﻿# ðŸ—ï¸ ESTRUTURA DO PROJETO: CONNECTION CYBER OS
-> Ãšltima atualizaÃ§Ã£o: 14/02/2026 13:45:17
-> Escopo: Todo o diretÃ³rio raiz
-
+﻿PROJETO: CONNECTION CYBER OS
+Atualizado em: 02/14/2026 14:05:43
 ---
- - \Sorteio
- - \web
- - \AUDIT_ConnectionCyberOS.ps1
- - \AUDIT_CYBER.ps1
- - \backup_fisico.ps1
- - \CHECK_ConnectionCyberOS.ps1
- - \CHECK_INTEGRITY.ps1
- - \CLOSE_ConnectionCyberOS.ps1
- - \CLOSE_SESSION.ps1
- - \DESIGN_SYSTEM_EXPORT.txt
- - \Estrutural Geral.txt
- - \Geral Levantamento.md
- - \PROJECT_STRUCTURE.md
- - \START_ConnectionCyberOS.ps1
- - \START_SESSION.ps1
- - \Sorteio\erro mobile.jpeg
- - \Sorteio\participantes_sorteio_12_02_2026.csv
- - \Sorteio\sorteio_cyber_os_2026-02-12.csv
- - \web\public
- - \web\src
- - \web\.env.local
- - \web\eslint.config.mjs
- - \web\next-env.d.ts
- - \web\next.config.mjs
- - \web\next.config.ts
- - \web\package-lock.json
- - \web\package.json
- - \web\postcss.config.mjs
- - \web\README.md
- - \web\tsconfig.json
- - \web\tsconfig.tsbuildinfo
- - \web\public\file.svg
- - \web\public\globe.svg
- - \web\public\next.svg
- - \web\public\vercel.svg
- - \web\public\window.svg
- - \web\src\app
- - \web\src\lib
- - \web\src\types
- - \web\src\utils
- - \web\src\proxy.ts
- - \web\src\app\(auth)
- - \web\src\app\(portal)
- - \web\src\app\checkin
- - \web\src\app\Nova pasta
- - \web\src\app\portal
- - \web\src\app\favicon.ico
- - \web\src\app\globals.css
- - \web\src\app\OLD page.tsx
- - \web\src\app\(auth)\login
- - \web\src\app\(auth)\login\actions.ts
- - \web\src\app\(auth)\login\page.tsx
- - \web\src\app\(portal)\portal
- - \web\src\app\(portal)\portal\watch
- - \web\src\app\(portal)\portal\page.tsx
- - \web\src\app\(portal)\portal\watch\[slug]
- - \web\src\app\(portal)\portal\watch\actions.ts
- - \web\src\app\(portal)\portal\watch\LessonCheck.tsx
- - \web\src\app\(portal)\portal\watch\[slug]\page.tsx
- - \web\src\app\checkin\[eventId]
- - \web\src\app\checkin\[eventId]\page.tsx
- - \web\src\app\portal\sorteio
- - \web\src\app\portal\sorteio\components
- - \web\src\app\portal\sorteio\executar
- - \web\src\app\portal\sorteio\showcase
- - \web\src\app\portal\sorteio\page.tsx
- - \web\src\app\portal\sorteio\PROJECT_STRUCTURE.md
- - \web\src\app\portal\sorteio\components\DrawEngine.tsx
- - \web\src\app\portal\sorteio\components\ExportData.tsx
- - \web\src\app\portal\sorteio\components\ParticipantForm.tsx
- - \web\src\app\portal\sorteio\components\ParticipantList.tsx
- - \web\src\app\portal\sorteio\components\QRCodeGenerator.tsx
- - \web\src\app\portal\sorteio\components\SettingsPanel.tsx
- - \web\src\app\portal\sorteio\executar\page.tsx
- - \web\src\app\portal\sorteio\showcase\page.tsx
- - \web\src\lib\hooks
- - \web\src\lib\utils.ts
- - \web\src\lib\hooks\useInactivity.ts
- - \web\src\types\index.ts
- - \web\src\utils\supabase
- - \web\src\utils\supabase\client.ts
- - \web\src\utils\supabase\middleware.ts
- - \web\src\utils\supabase\server.ts
+  DIR: Sorteio
+  DIR: web
+  FILE: AUDIT_ConnectionCyberOS.ps1
+  FILE: AUDIT_CYBER.ps1
+  FILE: backup_fisico.ps1
+  FILE: CHECK_ConnectionCyberOS.ps1
+  FILE: CHECK_INTEGRITY.ps1
+  FILE: CLOSE_ConnectionCyberOS.ps1
+  FILE: CLOSE_SESSION.ps1
+  FILE: DESIGN_SYSTEM_EXPORT.txt
+  FILE: Estrutural Geral.txt
+  FILE: Geral Levantamento.md
+  FILE: PROJECT_STRUCTURE.md
+  FILE: START_ConnectionCyberOS.ps1
+  FILE: START_SESSION.ps1
+    FILE: erro mobile.jpeg
+    FILE: participantes_sorteio_12_02_2026.csv
+    FILE: sorteio_cyber_os_2026-02-12.csv
+    DIR: public
+    DIR: src
+    FILE: .env.local
+    FILE: eslint.config.mjs
+    FILE: next-env.d.ts
+    FILE: next.config.mjs
+    FILE: next.config.ts
+    FILE: package-lock.json
+    FILE: package.json
+    FILE: postcss.config.mjs
+    FILE: README.md
+    FILE: tsconfig.json
+    FILE: tsconfig.tsbuildinfo
+      FILE: file.svg
+      FILE: globe.svg
+      FILE: next.svg
+      FILE: vercel.svg
+      FILE: window.svg
+      DIR: app
+      DIR: lib
+      DIR: types
+      DIR: utils
+      FILE: proxy.ts
+        DIR: (auth)
+        DIR: (portal)
+        DIR: checkin
+        DIR: Nova pasta
+        DIR: portal
+        FILE: favicon.ico
+        FILE: globals.css
+        FILE: OLD page.tsx
+          DIR: login
+            FILE: actions.ts
+            FILE: page.tsx
+          DIR: portal
+            DIR: watch
+            FILE: page.tsx
+              DIR: [slug]
+              FILE: actions.ts
+              FILE: LessonCheck.tsx
+                FILE: page.tsx
+          DIR: [eventId]
+            FILE: page.tsx
+          DIR: sorteio
+            DIR: components
+            DIR: executar
+            DIR: showcase
+            FILE: page.tsx
+            FILE: PROJECT_STRUCTURE.md
+              FILE: DrawEngine.tsx
+              FILE: ExportData.tsx
+              FILE: ParticipantForm.tsx
+              FILE: ParticipantList.tsx
+              FILE: QRCodeGenerator.tsx
+              FILE: SettingsPanel.tsx
+              FILE: page.tsx
+              FILE: page.tsx
+        DIR: hooks
+        FILE: utils.ts
+          FILE: useInactivity.ts
+        FILE: index.ts
+        DIR: supabase
+          FILE: client.ts
+          FILE: middleware.ts
+          FILE: server.ts

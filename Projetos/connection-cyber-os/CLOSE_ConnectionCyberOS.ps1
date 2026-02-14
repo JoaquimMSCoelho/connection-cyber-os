@@ -47,5 +47,5 @@ Get-ChildItem -Path $rootPath -Recurse |
         $linha | Out-File $output -Append -Encoding utf8
     }
 
-Write-Host "PROJECT_STRUCTURE.md atualizado com sucesso" -ForegroundColor Emerald
+Write-Host "PROJECT_STRUCTURE.md atualizado com sucesso" -ForegroundColor Green
 # -----------------------------------------------
