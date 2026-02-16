@@ -1,6 +1,6 @@
 "use client";
 
-import { User, Search, MapPin, Loader2, Archive, RefreshCcw, MoreHorizontal, Plus, CheckCircle2, AlertCircle } from "lucide-react";
+import { User, Search, MapPin, Loader2, Archive, RefreshCcw, MoreHorizontal, Plus, CheckCircle2, AlertCircle, History } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
@@ -59,9 +59,11 @@ export default function MembersView() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      {/* 1. CABEÇALHO E CONTROLES */}
-      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4`}>
-        <div>
+      {/* 1. COMPACT HEADER: Restauração dos textos originais validados + Busca Reduzida */}
+      <div className={`flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-neutral-900/50 p-4 rounded-xl border ${themeBorder}`}>
+        
+        {/* Título Original Restaurado (Intocado) */}
+        <div className="min-w-fit">
           <h1 className={`text-2xl font-bold ${viewMode === 'ACTIVE' ? "text-white" : "text-red-500"} tracking-tight`}>
             {viewMode === 'ACTIVE' ? "Gestão de Membros" : "Arquivo Morto (Membros)"}
           </h1>
@@ -69,9 +71,35 @@ export default function MembersView() {
             {viewMode === 'ACTIVE' ? "Gerencie os membros ativos da congregação." : "Histórico de membros excluídos/inativos."}
           </p>
         </div>
+
+        {/* Busca Embutida (Largura ajustada para max-w-sm para caber o título e os botões) */}
+        <div className="flex-1 max-w-sm relative group">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
+            <Search className="w-4 h-4" />
+          </div>
+          <input 
+            type="text" 
+            placeholder={viewMode === 'ACTIVE' ? "Buscar membro ativo..." : "Buscar no arquivo morto..."} 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className={`w-full bg-neutral-950 border ${themeBorder} rounded-lg py-2.5 pl-9 pr-4 text-sm text-neutral-200 placeholder-neutral-600 focus:border-emerald-500 outline-none transition-colors`}
+          />
+        </div>
         
+        {/* Botões de Ação */}
         <div className="flex items-center gap-3">
-            {/* Toggle Arquivo Morto (VERMELHO FIXO) */}
+            
+            {/* Botão Novo Histórico (Preparação Fase 7) */}
+            <button
+                type="button"
+                onClick={() => alert("O Histórico Eclesiástico Global será implementado na Fase 7.")}
+                className="hidden sm:flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-medium text-neutral-300 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 transition-colors"
+            >
+                <History className="w-3.5 h-3.5" />
+                Histórico
+            </button>
+
+            {/* Toggle Arquivo Morto (VERMELHO FIXO MANTIDO) */}
             <button
                 onClick={() => setViewMode(viewMode === 'ACTIVE' ? 'ARCHIVED' : 'ACTIVE')}
                 className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-medium transition-all border
@@ -87,7 +115,7 @@ export default function MembersView() {
             {viewMode === 'ACTIVE' && (
                 <Link 
                 href="/dashboard/membros/novo"
-                className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-emerald-900/20"
+                className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-emerald-900/20 whitespace-nowrap"
                 >
                 <Plus className="w-4 h-4" />
                 Novo Membro
@@ -96,21 +124,7 @@ export default function MembersView() {
         </div>
       </div>
 
-      {/* 2. BARRA DE BUSCA (Estilo Original) */}
-      <div className={`flex items-center gap-4 bg-neutral-900/50 p-1 rounded-xl border ${themeBorder} w-full max-w-md transition-colors`}>
-        <div className="pl-3 text-neutral-500">
-          <Search className="w-4 h-4" />
-        </div>
-        <input 
-          type="text" 
-          placeholder={viewMode === 'ACTIVE' ? "Buscar membro ativo..." : "Buscar no arquivo morto..."} 
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="bg-transparent border-none text-sm text-neutral-200 placeholder-neutral-600 w-full focus:ring-0 outline-none"
-        />
-      </div>
-
-      {/* 3. TABELA DE DADOS (Restaurada do Original) */}
+      {/* 2. TABELA DE DADOS (Restaurada do Original Imutável) */}
       <div className={`border ${themeBorder} rounded-xl overflow-hidden bg-neutral-900/30 transition-colors`}>
         <table className="w-full text-left text-sm">
           <thead className={`bg-neutral-900 border-b ${themeBorder}`}>

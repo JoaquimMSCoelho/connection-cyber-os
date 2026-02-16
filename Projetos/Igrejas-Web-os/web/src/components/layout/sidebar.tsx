@@ -8,9 +8,9 @@ import {
   Building2, 
   Wallet, 
   Settings, 
-  LogOut
+  LogOut,
+  GraduationCap
 } from "lucide-react";
-// FUSÃO TÉCNICA: Importação única do utilitário (Removemos a recriação manual que causava erro)
 import { cn } from "@/utils/cn";
 import { createClient } from "@/utils/supabase/client";
 
@@ -19,20 +19,19 @@ const menuItems = [
   { icon: Wallet, label: "Financeiro", href: "/dashboard/financeiro" },
   { icon: Users, label: "Membros", href: "/dashboard/membros" },
   { icon: Building2, label: "Setores & Igrejas", href: "/dashboard/igrejas" },
+  { icon: GraduationCap, label: "Formação Eclesiástica", href: "/dashboard/formacao" },
   { icon: Settings, label: "Configurações", href: "/dashboard/configuracoes" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
-  // FUSÃO TÉCNICA: Injeção dos Hooks de Navegação e Banco de Dados
   const router = useRouter();
   const supabase = createClient();
 
-  // Função de Logout Segura
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push("/"); // Redireciona para o login
-    router.refresh(); // Limpa o cache do Next.js para garantir que os dados sumam
+    router.push("/");
+    router.refresh();
   };
 
   return (
@@ -52,7 +51,11 @@ export function Sidebar() {
       {/* NAVIGATION */}
       <nav className="flex-1 py-6 px-3 space-y-1">
         {menuItems.map((item) => {
-          const isActive = pathname === item.href;
+          // Lógica Inteligente de Ativação (Mantém aceso em sub-rotas)
+          const isActive = item.href === '/dashboard' 
+             ? pathname === item.href 
+             : pathname.startsWith(item.href);
+
           return (
             <Link
               key={item.href}

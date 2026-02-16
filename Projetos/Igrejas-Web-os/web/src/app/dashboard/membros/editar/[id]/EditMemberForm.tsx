@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { ArrowLeft, Save, Loader2, Archive, Search, User, MapPin, Briefcase, Activity, Camera, Droplets, Church, Hash, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Archive, Search, User, MapPin, Briefcase, Activity, Camera, Droplets, Church, Hash, AlertTriangle, History } from "lucide-react";
 import Link from "next/link";
 import { updateMemberAction, archiveMemberAction } from "@/app/dashboard/membros/actions";
 import { useFormStatus } from "react-dom";
-
-const PROFISSOES_MOCK = ["Administrador", "Advogado", "Autônomo", "Bancário", "Comerciante", "Contador", "Dentista", "Desenvolvedor", "Do lar", "Enfermeiro", "Engenheiro", "Estudante", "Médico", "Motorista", "Professor", "Policial", "Vendedor", "Outros"];
 
 const validaCPF = (cpf: string) => { cpf = cpf.replace(/\D/g, ''); return cpf.length === 11; }; 
 
@@ -67,16 +65,23 @@ function ArchiveButton() {
 export default function EditMemberForm({ memberId }: { memberId: string }) {
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<any>(null);
+  
+  // ESTADOS MESTRES (MASTER DATA)
   const [churches, setChurches] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [states, setStates] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
+  const [professions, setProfessions] = useState<any[]>([]);
+  const [schoolings, setSchoolings] = useState<any[]>([]);
+  const [civilStatuses, setCivilStatuses] = useState<any[]>([]);
+  const [genders, setGenders] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     birth_date: "", phone: "", cpf: "", rg: "", rg_issuer: "", rg_state: "",
     nationality_state: "", nationality_city: "", ecclesiastical_status: "ACTIVE", photo_url: "",
     marriage_date: "", baptism_date: "", origin_church: "", church_id: "", role_id: "", registration_number: "",
-    spouse_name: "", father_name: "", mother_name: ""
+    spouse_name: "", father_name: "", mother_name: "",
+    gender: "", civil_status: "", profession: "", schooling: ""
   });
 
   const [timeBaptized, setTimeBaptized] = useState("---");
@@ -91,12 +96,23 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
   useEffect(() => {
     async function fetchData() {
       const supabase = createClient();
-      const [churchesRes, rolesRes] = await Promise.all([
+      
+      const [churchesRes, rolesRes, profRes, schoolRes, civilRes, genderRes] = await Promise.all([
         supabase.from("churches").select("id, name").order("name"),
-        supabase.from("ecclesiastical_roles").select("id, name").order("name")
+        supabase.from("ecclesiastical_roles").select("id, name").order("name"),
+        supabase.from("settings_professions").select("id, name").order("name"),
+        supabase.from("settings_schooling").select("id, name").order("name"),
+        supabase.from("settings_civil_status").select("id, name").order("name"),
+        supabase.from("settings_gender").select("id, name").order("name")
       ]);
+
       if (churchesRes.data) setChurches(churchesRes.data);
       if (rolesRes.data) setRoles(rolesRes.data);
+      if (profRes.data) setProfessions(profRes.data);
+      if (schoolRes.data) setSchoolings(schoolRes.data);
+      if (civilRes.data) setCivilStatuses(civilRes.data);
+      if (genderRes.data) setGenders(genderRes.data);
+
       fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome").then(res => res.json()).then(data => setStates(data));
 
       const { data: memberData } = await supabase.from("members").select("*").eq("id", memberId).single();
@@ -117,7 +133,11 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
             ecclesiastical_status: memberData.ecclesiastical_status || "ACTIVE", photo_url: memberData.photo_url || "",
             origin_church: memberData.origin_church || "", church_id: memberData.church_id || "", role_id: memberData.role_id || "",
             registration_number: memberData.registration_number || "",
-            spouse_name: memberData.spouse_name || "", father_name: memberData.father_name || "", mother_name: memberData.mother_name || ""
+            spouse_name: memberData.spouse_name || "", father_name: memberData.father_name || "", mother_name: memberData.mother_name || "",
+            gender: memberData.gender || "",
+            civil_status: memberData.civil_status || "",
+            profession: memberData.profession || "",
+            schooling: memberData.schooling || "",
           });
 
           setAddressData({
@@ -136,9 +156,16 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
 
   const fetchCities = async (uf: string) => {
     if (!uf) return;
-    const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
-    const data = await res.json();
-    setCities(data);
+
+    if (uf === 'DF') {
+        const supabase = createClient();
+        const { data } = await supabase.from("settings_custom_regions").select("id, name").eq("state_uf", "DF").order("name");
+        if (data) setCities(data.map((d: any) => ({ id: d.id, nome: d.name }))); 
+    } else {
+        const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
+        const data = await res.json();
+        setCities(data);
+    }
   };
 
   const checkCpfExists = async (cpfToCheck: string) => {
@@ -292,12 +319,10 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
           </div>
       )}
 
-      {/* FORMULÁRIO */}
       <form action={async (formDataFromReact) => { 
           setServerError("");
           if (cpfError || matriculaError) return; 
           
-          // FORÇANDO OS DADOS DO HEADER (PONTE INVISÍVEL)
           if (!formDataFromReact.get("church_id")) formDataFromReact.append("church_id", formData.church_id);
           if (!formDataFromReact.get("role_id")) formDataFromReact.append("role_id", formData.role_id);
           if (!formDataFromReact.get("registration_number")) formDataFromReact.append("registration_number", formData.registration_number);
@@ -313,7 +338,6 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
         
         <input type="hidden" name="id" value={member.id} />
         
-        {/* PONTE INVISÍVEL: Apenas os campos que ficam fora do Form (Header) */}
         <input type="hidden" name="photo_url" value={formData.photo_url} />
         <input type="hidden" name="baptism_date" value={formData.baptism_date} />
         <input type="hidden" name="church_id" value={formData.church_id} />
@@ -325,26 +349,44 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
             <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-12 md:col-span-4"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Nome do Membro</label><input name="full_name" type="text" required defaultValue={member.full_name} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white focus:border-emerald-500 outline-none" /></div>
                 <div className="col-span-6 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Data Nasc.</label><input name="birth_date" type="text" value={formData.birth_date} onChange={(e) => handleDateChange(e, 'birth_date')} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-center" /></div>
-                <div className="col-span-6 md:col-span-1"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Sexo</label><select name="gender" defaultValue={member.gender} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-center"><option value="M">M</option><option value="F">F</option></select></div>
-                <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Estado Civil</label><select name="civil_status" defaultValue={member.civil_status} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white"><option value="SOLTEIRO">Solteiro(a)</option><option value="CASADO">Casado(a)</option><option value="DIVORCIADO">Divorciado(a)</option><option value="VIUVO">Viúvo(a)</option></select></div>
-                <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Profissão</label><select name="profession" defaultValue={member.profession} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white"><option>Selecione...</option>{PROFISSOES_MOCK.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
+                
+                <div className="col-span-6 md:col-span-1"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Sexo</label>
+                    <select name="gender" value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-center">
+                        <option value="">...</option>{genders.map(g => <option key={g.id} value={g.name}>{g.name}</option>)}
+                    </select>
+                </div>
+                
+                <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Estado Civil</label>
+                    <select name="civil_status" value={formData.civil_status} onChange={(e) => setFormData({...formData, civil_status: e.target.value})} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white">
+                        <option value="">Selecione...</option>{civilStatuses.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    </select>
+                </div>
+                
+                <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Profissão</label>
+                    <select name="profession" value={formData.profession} onChange={(e) => setFormData({...formData, profession: e.target.value})} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white">
+                        <option value="">Selecione...</option>{professions.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                    </select>
+                </div>
             </div>
             
             <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">E-mail</label><input name="email" type="text" defaultValue={member.email} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
                 <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Telefone</label><input name="phone" type="text" value={formData.phone} onChange={handlePhoneChange} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
                 <div className="col-span-12 md:col-span-3">
-                    <label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Naturalidade</label>
+                    <label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Naturalidade (UF / Cidade)</label>
                     <div className="flex gap-2">
-                        {/* INJEÇÃO DO ONCHANGE COM FETCHCITIES E LIMPEZA DE CIDADE AQUI */}
                         <select name="nationality_state" value={formData.nationality_state} onChange={(e) => {
                             setFormData({...formData, nationality_state: e.target.value, nationality_city: ""});
                             fetchCities(e.target.value);
-                        }} className="w-20 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option>UF</option>{states.map((s:any)=><option key={s.id} value={s.sigla}>{s.sigla}</option>)}</select>
-                        <select name="nationality_city" value={formData.nationality_city} onChange={(e) => setFormData({...formData, nationality_city: e.target.value})} className="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option>{formData.nationality_city || "Cidade"}</option>{cities.map((c:any)=><option key={c.id} value={c.nome}>{c.nome}</option>)}</select>
+                        }} className="w-20 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option value="">UF</option>{states.map((s:any)=><option key={s.id} value={s.sigla}>{s.sigla}</option>)}</select>
+                        <select name="nationality_city" value={formData.nationality_city} onChange={(e) => setFormData({...formData, nationality_city: e.target.value})} className="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option value="">{formData.nationality_city || "Cidade"}</option>{cities.map((c:any)=><option key={c.id} value={c.nome}>{c.nome}</option>)}</select>
                     </div>
                 </div>
-                <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Escolaridade</label><select name="schooling" defaultValue={member.schooling} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white"><option>Selecione...</option><option value="MEDIO">Ensino Médio</option><option value="SUPERIOR">Superior</option></select></div>
+                <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Escolaridade</label>
+                    <select name="schooling" value={formData.schooling} onChange={(e) => setFormData({...formData, schooling: e.target.value})} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white">
+                        <option value="">Selecione...</option>{schoolings.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                    </select>
+                </div>
             </div>
 
             <div className="grid grid-cols-12 gap-4">
@@ -406,8 +448,19 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
                         </select>
                     </div>
                 </div>
+                
+                {/* FRENTE A - FASE 5: INJEÇÃO DO BOTÃO HISTÓRICO NO RODAPÉ */}
                 <div className="flex items-center gap-4 w-full xl:w-auto justify-end">
                     <ArchiveButton />
+                    
+                    <button 
+                        type="button" 
+                        onClick={() => alert("O Dossiê do Membro será implementado na Fase 7.")}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg text-sm font-medium transition-colors border border-neutral-700"
+                    >
+                        <History className="w-4 h-4" /> Histórico
+                    </button>
+                    
                     <div className="h-8 w-px bg-neutral-800 mx-2 hidden sm:block"></div>
                     <SubmitButton formDisabled={!!cpfError || !!matriculaError} />
                 </div>

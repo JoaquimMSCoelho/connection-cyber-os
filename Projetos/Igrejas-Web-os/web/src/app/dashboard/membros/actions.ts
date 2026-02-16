@@ -313,3 +313,18 @@ export async function restoreMemberAction(formData: FormData) {
     revalidatePath("/dashboard/membros");
     redirect("/dashboard/membros");
 }
+
+// --- AÇÃO 5: CONSULTAR PRÓXIMA MATRÍCULA (UX MAGIC BUTTON) ---
+export async function getNextRegistrationNumberAction(isActive: boolean) {
+  const supabase = await createClient();
+  
+  // Chama a função RPC (Procedure) que já criamos no banco de dados
+  const { data: nextMatricula, error } = await supabase.rpc('get_next_matricula', { is_active: isActive });
+  
+  if (error) {
+    console.error("Erro ao buscar próxima matrícula:", error);
+    return { success: false, message: "Erro ao gerar número.", data: null };
+  }
+  
+  return { success: true, data: nextMatricula };
+}

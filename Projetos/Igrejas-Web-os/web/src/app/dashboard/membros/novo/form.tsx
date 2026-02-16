@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { ArrowLeft, Plus, Loader2, Search, User, MapPin, Briefcase, Camera, Droplets, Church, Activity, Hash, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Search, User, MapPin, Briefcase, Camera, Droplets, Church, Activity, Hash, AlertTriangle, Wand2 } from "lucide-react";
 import Link from "next/link";
-import { createMemberAction } from "@/app/dashboard/membros/actions";
+import { createMemberAction, getNextRegistrationNumberAction } from "@/app/dashboard/membros/actions";
 import { useFormStatus } from "react-dom";
-
-const PROFISSOES_MOCK = ["Administrador", "Advogado", "Autônomo", "Bancário", "Comerciante", "Contador", "Dentista", "Desenvolvedor", "Do lar", "Enfermeiro", "Engenheiro", "Estudante", "Médico", "Motorista", "Professor", "Policial", "Vendedor", "Outros"];
 
 const validaCPF = (cpf: string) => { cpf = cpf.replace(/\D/g, ''); return cpf.length === 11; };
 
@@ -50,18 +48,26 @@ export default function NewMemberForm() {
   const [roles, setRoles] = useState<any[]>([]);
   const [states, setStates] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
+  const [professions, setProfessions] = useState<any[]>([]);
+  const [schoolings, setSchoolings] = useState<any[]>([]);
+  const [civilStatuses, setCivilStatuses] = useState<any[]>([]);
+  const [genders, setGenders] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     birth_date: "", phone: "", cpf: "", rg: "", rg_issuer: "SSP", rg_state: "SP",
     nationality_state: "SP", nationality_city: "", ecclesiastical_status: "ACTIVE", photo_url: "",
     marriage_date: "", baptism_date: "", origin_church: "", church_id: "", role_id: "", registration_number: "",
-    spouse_name: "", father_name: "", mother_name: ""
+    spouse_name: "", father_name: "", mother_name: "",
+    gender: "", civil_status: "", profession: "", schooling: ""
   });
 
   const [timeBaptized, setTimeBaptized] = useState("---");
   const [addressData, setAddressData] = useState({ zip_code: "", address: "", number: "", neighborhood: "", city: "", state: "" });
   const [loadingCep, setLoadingCep] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // FASE 6: Estado de Loading da Matrícula Automática
+  const [generatingMatricula, setGeneratingMatricula] = useState(false);
 
   const [cpfError, setCpfError] = useState("");
   const [matriculaError, setMatriculaError] = useState("");
@@ -70,13 +76,28 @@ export default function NewMemberForm() {
   useEffect(() => {
     async function fetchData() {
       const supabase = createClient();
-      const [churchesRes, rolesRes] = await Promise.all([
+      const [churchesRes, rolesRes, profRes, schoolRes, civilRes, genderRes] = await Promise.all([
         supabase.from("churches").select("id, name").order("name"),
-        supabase.from("ecclesiastical_roles").select("id, name").order("name")
+        supabase.from("ecclesiastical_roles").select("id, name").order("name"),
+        supabase.from("settings_professions").select("id, name").order("name"),
+        supabase.from("settings_schooling").select("id, name").order("name"),
+        supabase.from("settings_civil_status").select("id, name").order("name"),
+        supabase.from("settings_gender").select("id, name").order("name")
       ]);
+      
       if (churchesRes.data) setChurches(churchesRes.data);
       if (rolesRes.data) setRoles(rolesRes.data);
-      fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome").then(res => res.json()).then(data => setStates(data));
+      if (profRes.data) setProfessions(profRes.data);
+      if (schoolRes.data) setSchoolings(schoolRes.data);
+      if (civilRes.data) setCivilStatuses(civilRes.data);
+      if (genderRes.data) setGenders(genderRes.data);
+
+      fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome")
+        .then(res => res.json())
+        .then(data => {
+            const hasDF = data.some((s:any) => s.sigla === 'DF');
+            setStates(hasDF ? data : [...data, { id: 53, sigla: 'DF', nome: 'Distrito Federal' }]);
+        });
       fetchCities("SP");
     }
     fetchData();
@@ -84,9 +105,31 @@ export default function NewMemberForm() {
 
   const fetchCities = async (uf: string) => {
     if (!uf) return;
-    const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
-    const data = await res.json();
-    setCities(data);
+    setCities([]); 
+    
+    if (uf === 'DF') {
+        const supabase = createClient();
+        try {
+            const { data, error } = await supabase.from("settings_custom_regions").select("id, name").eq("state_uf", "DF").order("name");
+            if (error) throw error;
+            if (data && data.length > 0) {
+                 setCities(data.map((d: any) => ({ id: d.id, nome: d.name })));
+            } else {
+                 setCities([{ id: 'fallback', nome: 'Brasília' }]);
+            }
+        } catch (e) {
+            console.error("Erro ao buscar DF customizado", e);
+            setCities([{ id: 'fallback', nome: 'Brasília' }]);
+        }
+    } else {
+        try {
+            const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
+            const data = await res.json();
+            setCities(data);
+        } catch(e) {
+            console.error("Erro IBGE", e);
+        }
+    }
   };
 
   const checkCpfExists = async (cpfToCheck: string) => {
@@ -115,6 +158,22 @@ export default function NewMemberForm() {
       } else {
           setMatriculaError("");
       }
+  };
+
+  // FASE 6: Gerador UX de Matrícula (Magic Button Handler)
+  const handleGenerateMatricula = async () => {
+    setGeneratingMatricula(true);
+    setMatriculaError("");
+    
+    const isActive = formData.ecclesiastical_status === 'ACTIVE';
+    const result = await getNextRegistrationNumberAction(isActive);
+    
+    if (result.success && result.data) {
+        setFormData(prev => ({ ...prev, registration_number: result.data }));
+    } else {
+        setMatriculaError("Falha ao consultar servidor.");
+    }
+    setGeneratingMatricula(false);
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
@@ -188,7 +247,6 @@ export default function NewMemberForm() {
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       
-      {/* HEADER */}
       <div className="grid grid-cols-12 gap-6 pb-6 border-b border-neutral-800 items-center">
         <div className="col-span-12 lg:col-span-3 flex flex-col gap-4">
             <Link href="/dashboard/membros" className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors text-sm w-fit"><ArrowLeft className="w-4 h-4" /> Voltar para Gestão</Link>
@@ -205,20 +263,32 @@ export default function NewMemberForm() {
                 <div className="col-span-6"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Church className="w-3 h-3 text-emerald-500"/> Igreja Atual</label><select name="church_id" value={formData.church_id} onChange={(e) => setFormData({...formData, church_id: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white cursor-pointer focus:border-emerald-500 outline-none text-xs"><option value="">Selecione...</option>{churches.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
                 <div className="col-span-6"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Briefcase className="w-3 h-3 text-emerald-500"/> Cargo</label><select name="role_id" value={formData.role_id} onChange={(e) => setFormData({...formData, role_id: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white cursor-pointer focus:border-emerald-500 outline-none text-xs"><option value="">Selecione...</option>{roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
                 
+                {/* FASE 6: INJEÇÃO DO MAGIC BUTTON DE MATRÍCULA */}
                 <div className="col-span-4">
                     <label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Hash className="w-3 h-3 text-yellow-500"/> Matrícula</label>
-                    <input 
-                        name="registration_number" 
-                        type="text" 
-                        placeholder="Auto ou digite..." 
-                        value={formData.registration_number} 
-                        onChange={(e) => {
-                            setFormData({...formData, registration_number: e.target.value});
-                            if (matriculaError) setMatriculaError("");
-                        }}
-                        onBlur={() => checkMatriculaExists(formData.registration_number)}
-                        className={`w-full bg-neutral-900 border rounded-lg p-2 text-yellow-500 font-mono text-center text-xs outline-none transition-colors ${matriculaError ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-neutral-800 focus:border-yellow-500'}`} 
-                    />
+                    <div className="relative flex items-center">
+                        <input 
+                            name="registration_number" 
+                            type="text" 
+                            placeholder="Auto ou digite..." 
+                            value={formData.registration_number} 
+                            onChange={(e) => {
+                                setFormData({...formData, registration_number: e.target.value});
+                                if (matriculaError) setMatriculaError("");
+                            }}
+                            onBlur={() => checkMatriculaExists(formData.registration_number)}
+                            className={`w-full bg-neutral-900 border rounded-lg p-2 pr-9 text-yellow-500 font-mono text-center text-xs outline-none transition-colors ${matriculaError ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-neutral-800 focus:border-yellow-500'}`} 
+                        />
+                        <button 
+                            type="button" 
+                            onClick={handleGenerateMatricula}
+                            disabled={generatingMatricula}
+                            title="Gerar próximo número livre"
+                            className="absolute right-1 p-1.5 text-neutral-500 hover:text-yellow-500 hover:bg-neutral-800 rounded-md transition-colors disabled:opacity-50"
+                        >
+                            {generatingMatricula ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                        </button>
+                    </div>
                     {matriculaError && <span className="text-red-500 text-[10px] font-bold mt-1 block leading-tight">{matriculaError}</span>}
                 </div>
                 
@@ -235,7 +305,6 @@ export default function NewMemberForm() {
           </div>
       )}
 
-      {/* FORMULÁRIO */}
       <form action={async (formDataFromReact) => { 
           setServerError("");
           if (cpfError || matriculaError) return; 
@@ -253,7 +322,6 @@ export default function NewMemberForm() {
           }
       }} className="space-y-6">
 
-        {/* PONTE INVISÍVEL */}
         <input type="hidden" name="photo_url" value={formData.photo_url} />
         <input type="hidden" name="baptism_date" value={formData.baptism_date} />
         <input type="hidden" name="church_id" value={formData.church_id} />
@@ -265,9 +333,24 @@ export default function NewMemberForm() {
             <div className="grid grid-cols-12 gap-4">
                 <div className="col-span-12 md:col-span-4"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Nome do Membro</label><input name="full_name" type="text" required placeholder="Nome Completo" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white focus:border-emerald-500 outline-none" /></div>
                 <div className="col-span-6 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Data Nasc.</label><input name="birth_date" type="text" placeholder="DD/MM/AAAA" value={formData.birth_date} onChange={(e) => handleDateChange(e, 'birth_date')} maxLength={10} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-center" /></div>
-                <div className="col-span-6 md:col-span-1"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Sexo</label><select name="gender" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-center"><option value="M">M</option><option value="F">F</option></select></div>
-                <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Estado Civil</label><select name="civil_status" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white"><option value="SOLTEIRO">Solteiro</option><option value="CASADO">Casado</option></select></div>
-                <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Profissão</label><select name="profession" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white"><option>Selecione...</option>{PROFISSOES_MOCK.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
+                
+                <div className="col-span-6 md:col-span-1"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Sexo</label>
+                    <select name="gender" value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-center">
+                        <option value="">...</option>{genders.map(g => <option key={g.id} value={g.name}>{g.name}</option>)}
+                    </select>
+                </div>
+                
+                <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Estado Civil</label>
+                    <select name="civil_status" value={formData.civil_status} onChange={(e) => setFormData({...formData, civil_status: e.target.value})} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white">
+                        <option value="">Selecione...</option>{civilStatuses.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    </select>
+                </div>
+                
+                <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Profissão</label>
+                    <select name="profession" value={formData.profession} onChange={(e) => setFormData({...formData, profession: e.target.value})} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white">
+                        <option value="">Selecione...</option>{professions.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                    </select>
+                </div>
             </div>
             
             <div className="grid grid-cols-12 gap-4">
@@ -276,15 +359,18 @@ export default function NewMemberForm() {
                 <div className="col-span-12 md:col-span-3">
                     <label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Naturalidade (UF / Cidade)</label>
                     <div className="flex gap-2">
-                        {/* INJEÇÃO DO ONCHANGE COM FETCHCITIES E LIMPEZA DE CIDADE AQUI */}
                         <select name="nationality_state" value={formData.nationality_state} onChange={(e) => {
                             setFormData({...formData, nationality_state: e.target.value, nationality_city: ""});
                             fetchCities(e.target.value);
-                        }} className="w-20 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option>UF</option>{states.map((s:any)=><option key={s.id} value={s.sigla}>{s.sigla}</option>)}</select>
-                        <select name="nationality_city" value={formData.nationality_city} onChange={(e) => setFormData({...formData, nationality_city: e.target.value})} className="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option>{formData.nationality_city || "Cidade"}</option>{cities.map((c:any)=><option key={c.id} value={c.nome}>{c.nome}</option>)}</select>
+                        }} className="w-20 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option value="">UF</option>{states.map((s:any)=><option key={s.id} value={s.sigla}>{s.sigla}</option>)}</select>
+                        <select name="nationality_city" value={formData.nationality_city} onChange={(e) => setFormData({...formData, nationality_city: e.target.value})} className="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option value="">{formData.nationality_city || "Cidade"}</option>{cities.map((c:any)=><option key={c.id} value={c.nome}>{c.nome}</option>)}</select>
                     </div>
                 </div>
-                <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Escolaridade</label><select name="schooling" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white"><option>Selecione...</option><option value="MEDIO">Ensino Médio</option><option value="SUPERIOR">Superior</option></select></div>
+                <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Escolaridade</label>
+                    <select name="schooling" value={formData.schooling} onChange={(e) => setFormData({...formData, schooling: e.target.value})} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white">
+                        <option value="">Selecione...</option>{schoolings.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                    </select>
+                </div>
             </div>
             
             <div className="grid grid-cols-12 gap-4">
