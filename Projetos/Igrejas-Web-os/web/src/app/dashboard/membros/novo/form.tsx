@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { ArrowLeft, Plus, Loader2, Search, User, MapPin, Briefcase, Camera, Droplets, Church, Activity, Hash } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Search, User, MapPin, Briefcase, Camera, Droplets, Church, Activity, Hash, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { createMemberAction } from "@/app/dashboard/membros/actions";
 import { useFormStatus } from "react-dom";
@@ -34,10 +34,12 @@ const getStatusColor = (status: string) => {
     }
 };
 
-function SubmitButton() {
+function SubmitButton({ formDisabled }: { formDisabled?: boolean }) {
   const { pending } = useFormStatus();
+  const isDisabled = pending || formDisabled;
+  
   return (
-    <button type="submit" disabled={pending} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-emerald-900/20">
+    <button type="submit" disabled={isDisabled} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-emerald-900/20">
       {pending ? <><Loader2 className="w-4 h-4 animate-spin" /> Cadastrando...</> : <><Plus className="w-4 h-4" /> Cadastrar Membro</>}
     </button>
   );
@@ -61,6 +63,11 @@ export default function NewMemberForm() {
   const [loadingCep, setLoadingCep] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  // ESTADOS DE VALIDAÇÃO (INTOCÁVEIS)
+  const [cpfError, setCpfError] = useState("");
+  const [matriculaError, setMatriculaError] = useState("");
+  const [serverError, setServerError] = useState("");
+
   useEffect(() => {
     async function fetchData() {
       const supabase = createClient();
@@ -83,6 +90,34 @@ export default function NewMemberForm() {
     setCities(data);
   };
 
+  const checkCpfExists = async (cpfToCheck: string) => {
+      if (!cpfToCheck || cpfToCheck.length < 14) {
+          setCpfError("");
+          return;
+      }
+      const supabase = createClient();
+      const { data } = await supabase.from("members").select("id").eq("cpf", cpfToCheck).single();
+      if (data) {
+          setCpfError("Este CPF já está cadastrado no sistema.");
+      } else {
+          setCpfError("");
+      }
+  };
+
+  const checkMatriculaExists = async (matToCheck: string) => {
+      if (!matToCheck || matToCheck.trim() === "") {
+          setMatriculaError("");
+          return;
+      }
+      const supabase = createClient();
+      const { data } = await supabase.from("members").select("id").eq("registration_number", matToCheck).single();
+      if (data) {
+          setMatriculaError("Esta matrícula já está em uso.");
+      } else {
+          setMatriculaError("");
+      }
+  };
+
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
     let v = e.target.value.replace(/\D/g, "");
     if (v.length > 2 && v.length <= 4) v = v.replace(/(\d{2})(\d{1,2})/, "$1/$2");
@@ -92,6 +127,7 @@ export default function NewMemberForm() {
         if(v.length === 10) setTimeBaptized(calculateTimeBaptized(v)); else setTimeBaptized("---");
     }
   };
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "");
     if (v.length > 10) v = v.replace(/(\d{2})(\d{1})(\d{4})(\d{4})/, "($1) $2$3-$4");
@@ -100,13 +136,16 @@ export default function NewMemberForm() {
     else v = v.replace(/(\d*)/, "($1");
     setFormData(prev => ({ ...prev, phone: v }));
   };
+
   const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "");
     v = v.replace(/(\d{3})(\d)/, '$1.$2');
     v = v.replace(/(\d{3})(\d)/, '$1.$2');
     v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
     setFormData(prev => ({ ...prev, cpf: v }));
+    if (cpfError) setCpfError(""); 
   };
+
   const handleRGChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/\D/g, "").toUpperCase();
     if (v.length > 1 && v.length <= 4) v = v.replace(/(\d{2})(\d{1,3})/, "$1.$2");
@@ -114,6 +153,7 @@ export default function NewMemberForm() {
     else if (v.length > 7) v = v.replace(/(\d{2})(\d{3})(\d{3})(\d{1})/, "$1.$2.$3-$4");
     setFormData(prev => ({ ...prev, rg: v }));
   };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       setUploading(true);
@@ -128,10 +168,12 @@ export default function NewMemberForm() {
       setFormData(prev => ({ ...prev, photo_url: data.publicUrl }));
     } catch (error) { alert('Erro no upload'); } finally { setUploading(false); }
   };
+
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const { name, value } = e.target;
       setAddressData(prev => ({ ...prev, [name]: value }));
   };
+
   const handleBlurCep = async (e: React.FocusEvent<HTMLInputElement>) => {
     const cep = e.target.value.replace(/\D/g, '');
     if (cep.length === 8) {
@@ -147,7 +189,7 @@ export default function NewMemberForm() {
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       
-      {/* HEADER NOVO */}
+      {/* HEADER */}
       <div className="grid grid-cols-12 gap-6 pb-6 border-b border-neutral-800 items-center">
         <div className="col-span-12 lg:col-span-3 flex flex-col gap-4">
             <Link href="/dashboard/membros" className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors text-sm w-fit"><ArrowLeft className="w-4 h-4" /> Voltar para Gestão</Link>
@@ -163,20 +205,56 @@ export default function NewMemberForm() {
             <div className="grid grid-cols-12 gap-3 items-end">
                 <div className="col-span-6"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Church className="w-3 h-3 text-emerald-500"/> Igreja Atual</label><select name="church_id" value={formData.church_id} onChange={(e) => setFormData({...formData, church_id: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white cursor-pointer focus:border-emerald-500 outline-none text-xs"><option value="">Selecione...</option>{churches.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
                 <div className="col-span-6"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Briefcase className="w-3 h-3 text-emerald-500"/> Cargo</label><select name="role_id" value={formData.role_id} onChange={(e) => setFormData({...formData, role_id: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white cursor-pointer focus:border-emerald-500 outline-none text-xs"><option value="">Selecione...</option>{roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
-                <div className="col-span-4"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Hash className="w-3 h-3 text-yellow-500"/> Matrícula</label><input name="registration_number" type="text" placeholder="Auto" value="" readOnly className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2 text-yellow-500 font-mono text-center text-xs outline-none" /></div>
+                
+                <div className="col-span-4">
+                    <label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Hash className="w-3 h-3 text-yellow-500"/> Matrícula</label>
+                    <input 
+                        name="registration_number" 
+                        type="text" 
+                        placeholder="Auto ou digite..." 
+                        value={formData.registration_number} 
+                        onChange={(e) => {
+                            setFormData({...formData, registration_number: e.target.value});
+                            if (matriculaError) setMatriculaError("");
+                        }}
+                        onBlur={() => checkMatriculaExists(formData.registration_number)}
+                        className={`w-full bg-neutral-900 border rounded-lg p-2 text-yellow-500 font-mono text-center text-xs outline-none transition-colors ${matriculaError ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-neutral-800 focus:border-yellow-500'}`} 
+                    />
+                    {matriculaError && <span className="text-red-500 text-[10px] font-bold mt-1 block leading-tight">{matriculaError}</span>}
+                </div>
+                
                 <div className="col-span-4"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Droplets className="w-3 h-3 text-cyan-500"/> Batismo</label><input name="baptism_date" type="text" placeholder="DD/MM/AAAA" value={formData.baptism_date} onChange={(e) => handleDateChange(e, 'baptism_date')} maxLength={10} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white text-center focus:border-cyan-500 outline-none text-xs" /></div>
                 <div className="col-span-4"><label className="text-[10px] uppercase text-neutral-500 font-bold mb-1 block">Tempo</label><div className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-cyan-500 font-bold text-xs border-l-2 border-l-cyan-500/50 truncate">{timeBaptized}</div></div>
             </div>
         </div>
       </div>
 
-      {/* FORMULÁRIO ÚNICO */}
-      <form action={createMemberAction} className="space-y-6">
+      {serverError && (
+          <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-xl text-sm mb-6 flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5" /> 
+              <span className="font-medium">{serverError}</span>
+          </div>
+      )}
+
+      {/* FORMULÁRIO */}
+      <form action={async (formData) => { 
+          setServerError("");
+          if (cpfError || matriculaError) return; // Proteção Cumulativa
+          const result = await createMemberAction(formData); 
+          if (result && result.success === false) {
+              setServerError(result.message);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+      }} className="space-y-6">
+        
         <input type="hidden" name="photo_url" value={formData.photo_url} />
         <input type="hidden" name="baptism_date" value={formData.baptism_date} />
         <input type="hidden" name="church_id" value={formData.church_id} />
         <input type="hidden" name="role_id" value={formData.role_id} />
         <input type="hidden" name="registration_number" value={formData.registration_number} />
+        <input type="hidden" name="spouse_name" value={formData.spouse_name} />
+        <input type="hidden" name="father_name" value={formData.father_name} />
+        <input type="hidden" name="mother_name" value={formData.mother_name} />
 
         <div className="space-y-4">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 pb-2"><User className="w-4 h-4 text-emerald-500" /> Dados Pessoais</h2>
@@ -192,7 +270,7 @@ export default function NewMemberForm() {
                 <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">E-mail</label><input name="email" type="text" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
                 <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Telefone</label><input name="phone" type="text" value={formData.phone} onChange={handlePhoneChange} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
                 <div className="col-span-12 md:col-span-3">
-                    <label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Naturalidade (UF / Cidade)</label>
+                    <label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Naturalidade</label>
                     <div className="flex gap-2">
                         <select name="nationality_state" value={formData.nationality_state} onChange={(e) => setFormData({...formData, nationality_state: e.target.value})} className="w-20 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option>UF</option>{states.map((s:any)=><option key={s.id} value={s.sigla}>{s.sigla}</option>)}</select>
                         <select name="nationality_city" value={formData.nationality_city} onChange={(e) => setFormData({...formData, nationality_city: e.target.value})} className="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option>{formData.nationality_city || "Cidade"}</option>{cities.map((c:any)=><option key={c.id} value={c.nome}>{c.nome}</option>)}</select>
@@ -202,14 +280,25 @@ export default function NewMemberForm() {
             </div>
             
             <div className="grid grid-cols-12 gap-4">
-                <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">CPF</label><input name="cpf" type="text" value={formData.cpf} onChange={handleCPFChange} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
+                <div className="col-span-12 md:col-span-2">
+                    <label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">CPF</label>
+                    <input 
+                        name="cpf" 
+                        type="text" 
+                        value={formData.cpf} 
+                        onChange={handleCPFChange} 
+                        onBlur={() => checkCpfExists(formData.cpf)}
+                        className={`w-full bg-neutral-900 border rounded-lg p-2.5 text-white transition-all outline-none ${cpfError ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-neutral-800 focus:border-emerald-500'}`} 
+                    />
+                    {cpfError && <span className="text-red-500 text-[10px] font-bold mt-1 block">{cpfError}</span>}
+                </div>
+                
                 <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">RG</label><input name="rg" type="text" value={formData.rg} onChange={handleRGChange} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
                 <div className="col-span-6 md:col-span-1"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Órgão</label><input name="rg_issuer" type="text" value={formData.rg_issuer} onChange={(e)=>setFormData({...formData, rg_issuer: e.target.value.toUpperCase()})} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white uppercase" /></div>
                 <div className="col-span-6 md:col-span-1"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">UF RG</label><input name="rg_state" type="text" value={formData.rg_state} onChange={(e)=>setFormData({...formData, rg_state: e.target.value.toUpperCase()})} maxLength={2} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white uppercase" /></div>
                 <div className="col-span-12 md:col-span-6"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Igreja de Origem</label><input name="origin_church" type="text" placeholder="Nome da igreja anterior..." value={formData.origin_church} onChange={(e) => setFormData({...formData, origin_church: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2.5 text-white focus:border-emerald-500 outline-none" /></div>
             </div>
 
-            {/* FAMÍLIA BLINDADA: GRID EXATO DE 7 COLUNAS (2 + 2 + 2 + 1) */}
             <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mt-2">
                 <div className="col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Nome da Mãe</label><input name="mother_name" type="text" value={formData.mother_name} onChange={(e) => setFormData({...formData, mother_name: e.target.value})} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
                 <div className="col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Nome do Pai</label><input name="father_name" type="text" value={formData.father_name} onChange={(e) => setFormData({...formData, father_name: e.target.value})} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
@@ -218,7 +307,6 @@ export default function NewMemberForm() {
             </div>
         </div>
 
-        {/* ENDEREÇO */}
         <div className="space-y-4 pt-2">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2"><MapPin className="w-4 h-4 text-emerald-500" /> Endereço Residencial</h2>
             <div className="grid grid-cols-12 gap-4">
@@ -251,7 +339,7 @@ export default function NewMemberForm() {
                     </div>
                 </div>
                 <div className="flex items-center gap-4 w-full xl:w-auto justify-end">
-                    <SubmitButton />
+                    <SubmitButton formDisabled={!!cpfError || !!matriculaError} />
                 </div>
             </div>
         </div>

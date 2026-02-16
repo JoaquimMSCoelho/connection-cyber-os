@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { ArrowLeft, Save, Loader2, Archive, Search, User, MapPin, Briefcase, Activity, Camera, Droplets, Church, Hash } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Archive, Search, User, MapPin, Briefcase, Activity, Camera, Droplets, Church, Hash, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { updateMemberAction, archiveMemberAction } from "@/app/dashboard/membros/actions";
 import { useFormStatus } from "react-dom";
@@ -26,7 +26,16 @@ function calculateTimeBaptized(dateString: string) {
     return `${years} anos e ${months} meses`;
 }
 
-// CORES DE STATUS
+// INJEÇÃO FUNCIONAL REVISADA: PARSER DE BANCO -> TELA (Remove Timezone antes do split)
+function formatIsoToDateBr(dateStr: string | null) {
+    if (!dateStr) return "";
+    if (dateStr.includes('/')) return dateStr;
+    const justDate = dateStr.split('T')[0];
+    const parts = justDate.split('-');
+    if (parts.length !== 3) return dateStr;
+    return `${parts[2]}/${parts[1]}/${parts[0]}`; 
+}
+
 const getStatusColor = (status: string) => {
     switch (status) {
         case 'ACTIVE': return "text-[#28A745] border-[#28A745]/50 font-black"; 
@@ -37,11 +46,12 @@ const getStatusColor = (status: string) => {
     }
 };
 
-// COMPONENTES
-function SubmitButton() {
+function SubmitButton({ formDisabled }: { formDisabled?: boolean }) {
   const { pending } = useFormStatus();
+  const isDisabled = pending || formDisabled;
+  
   return (
-    <button type="submit" disabled={pending} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-emerald-900/20">
+    <button type="submit" disabled={isDisabled} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-emerald-900/20">
       {pending ? <><Loader2 className="w-4 h-4 animate-spin" /> Salvando...</> : <><Save className="w-4 h-4" /> Salvar Alterações</>}
     </button>
   );
@@ -50,8 +60,7 @@ function SubmitButton() {
 function ArchiveButton() {
     const { pending } = useFormStatus();
     return (
-      <button type="submit" disabled={pending} className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-sm font-medium transition-colors border border-red-500/20 hover:border-red-500/50"
-        onClick={(e) => { if (!confirm("Tem certeza?")) e.preventDefault(); }}>
+      <button formAction={async (formData) => { await archiveMemberAction(formData); }} disabled={pending} className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-sm font-medium transition-colors border border-red-500/20 hover:border-red-500/50" onClick={(e) => { if (!confirm("Tem certeza?")) e.preventDefault(); }}>
         {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4" />}
         Arquivar
       </button>
@@ -77,6 +86,11 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
   const [addressData, setAddressData] = useState({ zip_code: "", address: "", number: "", neighborhood: "", city: "", state: "" });
   const [loadingCep, setLoadingCep] = useState(false);
   const [uploading, setUploading] = useState(false);
+  
+  // ESTADOS DE VALIDAÇÃO (INTOCÁVEIS)
+  const [cpfError, setCpfError] = useState("");
+  const [matriculaError, setMatriculaError] = useState("");
+  const [serverError, setServerError] = useState("");
 
   useEffect(() => {
     async function fetchData() {
@@ -93,23 +107,30 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
 
       if (memberData) {
           setMember(memberData);
+          
+          const formattedBaptism = formatIsoToDateBr(memberData.baptism_date);
+
           setFormData({
             ...memberData,
-            birth_date: memberData.birth_date || "", phone: memberData.phone || "", cpf: memberData.cpf || "",
+            birth_date: formatIsoToDateBr(memberData.birth_date),
+            marriage_date: formatIsoToDateBr(memberData.marriage_date),
+            baptism_date: formattedBaptism,
+            phone: memberData.phone || "", cpf: memberData.cpf || "",
             rg: memberData.rg || "", rg_issuer: memberData.rg_issuer || "SSP", rg_state: memberData.rg_state || "SP",
             nationality_state: memberData.nationality_state || "SP", nationality_city: memberData.nationality_city || "",
             ecclesiastical_status: memberData.ecclesiastical_status || "ACTIVE", photo_url: memberData.photo_url || "",
-            marriage_date: memberData.marriage_date || "", baptism_date: memberData.baptism_date || "",
             origin_church: memberData.origin_church || "", church_id: memberData.church_id || "", role_id: memberData.role_id || "",
             registration_number: memberData.registration_number || "",
             spouse_name: memberData.spouse_name || "", father_name: memberData.father_name || "", mother_name: memberData.mother_name || ""
           });
+
           setAddressData({
               zip_code: memberData.zip_code || "", address: memberData.address || "",
               number: memberData.number || "", neighborhood: memberData.neighborhood || "",
               city: memberData.city || "", state: memberData.state || ""
           });
-          if(memberData.baptism_date) setTimeBaptized(calculateTimeBaptized(memberData.baptism_date));
+
+          if(formattedBaptism) setTimeBaptized(calculateTimeBaptized(formattedBaptism));
           if(memberData.nationality_state) fetchCities(memberData.nationality_state); else fetchCities("SP");
       }
       setLoading(false);
@@ -122,6 +143,34 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
     const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
     const data = await res.json();
     setCities(data);
+  };
+
+  const checkCpfExists = async (cpfToCheck: string) => {
+      if (!cpfToCheck || cpfToCheck.length < 14) {
+          setCpfError("");
+          return;
+      }
+      const supabase = createClient();
+      const { data } = await supabase.from("members").select("id").eq("cpf", cpfToCheck).neq("id", memberId).single();
+      if (data) {
+          setCpfError("Este CPF já pertence a outro membro.");
+      } else {
+          setCpfError("");
+      }
+  };
+
+  const checkMatriculaExists = async (matToCheck: string) => {
+      if (!matToCheck || matToCheck.trim() === "") {
+          setMatriculaError("");
+          return;
+      }
+      const supabase = createClient();
+      const { data } = await supabase.from("members").select("id").eq("registration_number", matToCheck).neq("id", memberId).single();
+      if (data) {
+          setMatriculaError("Esta matrícula já pertence a outro membro.");
+      } else {
+          setMatriculaError("");
+      }
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
@@ -149,6 +198,7 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
     v = v.replace(/(\d{3})(\d)/, '$1.$2');
     v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
     setFormData(prev => ({ ...prev, cpf: v }));
+    if (cpfError) setCpfError(""); 
   };
 
   const handleRGChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,16 +265,59 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
             <div className="grid grid-cols-12 gap-3 items-end">
                 <div className="col-span-6"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Church className="w-3 h-3 text-emerald-500"/> Igreja Atual</label><select name="church_id" value={formData.church_id} onChange={(e) => setFormData({...formData, church_id: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white cursor-pointer focus:border-emerald-500 outline-none text-xs"><option value="">Selecione...</option>{churches.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
                 <div className="col-span-6"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Briefcase className="w-3 h-3 text-emerald-500"/> Cargo</label><select name="role_id" value={formData.role_id} onChange={(e) => setFormData({...formData, role_id: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white cursor-pointer focus:border-emerald-500 outline-none text-xs"><option value="">Selecione...</option>{roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
-                <div className="col-span-4"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Hash className="w-3 h-3 text-yellow-500"/> Matrícula</label><input name="registration_number" type="text" placeholder="Auto" value={formData.registration_number || "---"} readOnly className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2 text-yellow-500 font-mono text-center text-xs outline-none" /></div>
+                
+                <div className="col-span-4">
+                    <label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Hash className="w-3 h-3 text-yellow-500"/> Matrícula</label>
+                    <input 
+                        name="registration_number" 
+                        type="text" 
+                        placeholder="Auto ou digite..." 
+                        value={formData.registration_number} 
+                        onChange={(e) => {
+                            setFormData({...formData, registration_number: e.target.value});
+                            if (matriculaError) setMatriculaError("");
+                        }}
+                        onBlur={() => checkMatriculaExists(formData.registration_number)}
+                        className={`w-full bg-neutral-900 border rounded-lg p-2 text-yellow-500 font-mono text-center text-xs outline-none transition-colors ${matriculaError ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-neutral-800 focus:border-yellow-500'}`} 
+                    />
+                    {matriculaError && <span className="text-red-500 text-[10px] font-bold mt-1 block leading-tight">{matriculaError}</span>}
+                </div>
+
                 <div className="col-span-4"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Droplets className="w-3 h-3 text-cyan-500"/> Batismo</label><input name="baptism_date" type="text" placeholder="DD/MM/AAAA" value={formData.baptism_date} onChange={(e) => handleDateChange(e, 'baptism_date')} maxLength={10} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white text-center focus:border-cyan-500 outline-none text-xs" /></div>
                 <div className="col-span-4"><label className="text-[10px] uppercase text-neutral-500 font-bold mb-1 block">Tempo</label><div className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-cyan-500 font-bold text-xs border-l-2 border-l-cyan-500/50 truncate">{timeBaptized}</div></div>
             </div>
         </div>
       </div>
 
-      {/* FORMULÁRIO ÚNICO */}
-      <form action={updateMemberAction} className="space-y-6">
+      {serverError && (
+          <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-xl text-sm mb-6 flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5" /> 
+              <span className="font-medium">{serverError}</span>
+          </div>
+      )}
+
+      {/* FORMULÁRIO */}
+      <form action={async (formDataFromReact) => { 
+          setServerError("");
+          if (cpfError || matriculaError) return; 
+          
+          // FORÇANDO OS DADOS DO HEADER (PONTE INVISÍVEL)
+          if (!formDataFromReact.get("church_id")) formDataFromReact.append("church_id", formData.church_id);
+          if (!formDataFromReact.get("role_id")) formDataFromReact.append("role_id", formData.role_id);
+          if (!formDataFromReact.get("registration_number")) formDataFromReact.append("registration_number", formData.registration_number);
+          if (!formDataFromReact.get("baptism_date")) formDataFromReact.append("baptism_date", formData.baptism_date);
+          if (!formDataFromReact.get("photo_url")) formDataFromReact.append("photo_url", formData.photo_url);
+
+          const result = await updateMemberAction(formDataFromReact); 
+          if (result && result.success === false) {
+              setServerError(result.message);
+              window.scrollTo({ top: 0, behavior: 'smooth' }); 
+          }
+      }} className="space-y-6">
+        
         <input type="hidden" name="id" value={member.id} />
+        
+        {/* PONTE INVISÍVEL: Apenas os campos que ficam fora do Form (Header) */}
         <input type="hidden" name="photo_url" value={formData.photo_url} />
         <input type="hidden" name="baptism_date" value={formData.baptism_date} />
         <input type="hidden" name="church_id" value={formData.church_id} />
@@ -255,14 +348,25 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
             </div>
 
             <div className="grid grid-cols-12 gap-4">
-                <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">CPF</label><input name="cpf" type="text" value={formData.cpf} onChange={handleCPFChange} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
+                <div className="col-span-12 md:col-span-2">
+                    <label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">CPF</label>
+                    <input 
+                        name="cpf" 
+                        type="text" 
+                        value={formData.cpf} 
+                        onChange={handleCPFChange} 
+                        onBlur={() => checkCpfExists(formData.cpf)}
+                        className={`w-full bg-neutral-900 border rounded-lg p-2.5 text-white transition-all outline-none ${cpfError ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-neutral-800 focus:border-emerald-500'}`} 
+                    />
+                    {cpfError && <span className="text-red-500 text-[10px] font-bold mt-1 block">{cpfError}</span>}
+                </div>
+                
                 <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">RG</label><input name="rg" type="text" value={formData.rg} onChange={handleRGChange} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
                 <div className="col-span-6 md:col-span-1"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Órgão</label><input name="rg_issuer" type="text" value={formData.rg_issuer} onChange={(e)=>setFormData({...formData, rg_issuer: e.target.value.toUpperCase()})} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white uppercase" /></div>
                 <div className="col-span-6 md:col-span-1"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">UF RG</label><input name="rg_state" type="text" value={formData.rg_state} onChange={(e)=>setFormData({...formData, rg_state: e.target.value.toUpperCase()})} maxLength={2} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white uppercase" /></div>
                 <div className="col-span-12 md:col-span-6"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Igreja de Origem</label><input name="origin_church" type="text" placeholder="Nome da igreja anterior..." value={formData.origin_church} onChange={(e) => setFormData({...formData, origin_church: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2.5 text-white focus:border-emerald-500 outline-none" /></div>
             </div>
 
-            {/* FAMÍLIA BLINDADA: GRID EXATO DE 7 COLUNAS (2 + 2 + 2 + 1) */}
             <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mt-2">
                 <div className="col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Nome da Mãe</label><input name="mother_name" type="text" value={formData.mother_name} onChange={(e) => setFormData({...formData, mother_name: e.target.value})} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
                 <div className="col-span-2"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Nome do Pai</label><input name="father_name" type="text" value={formData.father_name} onChange={(e) => setFormData({...formData, father_name: e.target.value})} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
@@ -271,7 +375,6 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
             </div>
         </div>
 
-        {/* ENDEREÇO */}
         <div className="space-y-4 pt-2">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2"><MapPin className="w-4 h-4 text-emerald-500" /> Endereço Residencial</h2>
             <div className="grid grid-cols-12 gap-4">
@@ -286,7 +389,6 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
             </div>
         </div>
 
-        {/* STATUS */}
         <div className="mt-2">
             <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 flex flex-col xl:flex-row items-center gap-6 justify-between">
                 <div className="flex flex-col sm:flex-row gap-4 w-full xl:w-auto">
@@ -307,7 +409,7 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
                 <div className="flex items-center gap-4 w-full xl:w-auto justify-end">
                     <ArchiveButton />
                     <div className="h-8 w-px bg-neutral-800 mx-2 hidden sm:block"></div>
-                    <SubmitButton />
+                    <SubmitButton formDisabled={!!cpfError || !!matriculaError} />
                 </div>
             </div>
         </div>
