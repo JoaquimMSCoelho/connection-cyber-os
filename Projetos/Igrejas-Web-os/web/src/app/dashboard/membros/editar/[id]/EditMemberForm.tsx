@@ -7,10 +7,8 @@ import Link from "next/link";
 import { updateMemberAction, archiveMemberAction } from "@/app/dashboard/membros/actions";
 import { useFormStatus } from "react-dom";
 
-// MOCKS
 const PROFISSOES_MOCK = ["Administrador", "Advogado", "Autônomo", "Bancário", "Comerciante", "Contador", "Dentista", "Desenvolvedor", "Do lar", "Enfermeiro", "Engenheiro", "Estudante", "Médico", "Motorista", "Professor", "Policial", "Vendedor", "Outros"];
 
-// UTILITÁRIOS
 const validaCPF = (cpf: string) => { cpf = cpf.replace(/\D/g, ''); return cpf.length === 11; }; 
 
 function calculateTimeBaptized(dateString: string) {
@@ -26,7 +24,6 @@ function calculateTimeBaptized(dateString: string) {
     return `${years} anos e ${months} meses`;
 }
 
-// INJEÇÃO FUNCIONAL REVISADA: PARSER DE BANCO -> TELA (Remove Timezone antes do split)
 function formatIsoToDateBr(dateStr: string | null) {
     if (!dateStr) return "";
     if (dateStr.includes('/')) return dateStr;
@@ -87,7 +84,6 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
   const [loadingCep, setLoadingCep] = useState(false);
   const [uploading, setUploading] = useState(false);
   
-  // ESTADOS DE VALIDAÇÃO (INTOCÁVEIS)
   const [cpfError, setCpfError] = useState("");
   const [matriculaError, setMatriculaError] = useState("");
   const [serverError, setServerError] = useState("");
@@ -340,7 +336,11 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
                 <div className="col-span-12 md:col-span-3">
                     <label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Naturalidade</label>
                     <div className="flex gap-2">
-                        <select name="nationality_state" value={formData.nationality_state} onChange={(e) => setFormData({...formData, nationality_state: e.target.value})} className="w-20 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option>UF</option>{states.map((s:any)=><option key={s.id} value={s.sigla}>{s.sigla}</option>)}</select>
+                        {/* INJEÇÃO DO ONCHANGE COM FETCHCITIES E LIMPEZA DE CIDADE AQUI */}
+                        <select name="nationality_state" value={formData.nationality_state} onChange={(e) => {
+                            setFormData({...formData, nationality_state: e.target.value, nationality_city: ""});
+                            fetchCities(e.target.value);
+                        }} className="w-20 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option>UF</option>{states.map((s:any)=><option key={s.id} value={s.sigla}>{s.sigla}</option>)}</select>
                         <select name="nationality_city" value={formData.nationality_city} onChange={(e) => setFormData({...formData, nationality_city: e.target.value})} className="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option>{formData.nationality_city || "Cidade"}</option>{cities.map((c:any)=><option key={c.id} value={c.nome}>{c.nome}</option>)}</select>
                     </div>
                 </div>

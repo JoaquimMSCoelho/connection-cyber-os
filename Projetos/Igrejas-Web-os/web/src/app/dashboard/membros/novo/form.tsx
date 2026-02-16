@@ -63,7 +63,6 @@ export default function NewMemberForm() {
   const [loadingCep, setLoadingCep] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // ESTADOS DE VALIDAÇÃO (INTOCÁVEIS)
   const [cpfError, setCpfError] = useState("");
   const [matriculaError, setMatriculaError] = useState("");
   const [serverError, setServerError] = useState("");
@@ -237,24 +236,29 @@ export default function NewMemberForm() {
       )}
 
       {/* FORMULÁRIO */}
-      <form action={async (formData) => { 
+      <form action={async (formDataFromReact) => { 
           setServerError("");
-          if (cpfError || matriculaError) return; // Proteção Cumulativa
-          const result = await createMemberAction(formData); 
+          if (cpfError || matriculaError) return; 
+          
+          if (!formDataFromReact.get("church_id")) formDataFromReact.append("church_id", formData.church_id);
+          if (!formDataFromReact.get("role_id")) formDataFromReact.append("role_id", formData.role_id);
+          if (!formDataFromReact.get("registration_number")) formDataFromReact.append("registration_number", formData.registration_number);
+          if (!formDataFromReact.get("baptism_date")) formDataFromReact.append("baptism_date", formData.baptism_date);
+          if (!formDataFromReact.get("photo_url")) formDataFromReact.append("photo_url", formData.photo_url);
+
+          const result = await createMemberAction(formDataFromReact); 
           if (result && result.success === false) {
               setServerError(result.message);
               window.scrollTo({ top: 0, behavior: 'smooth' });
           }
       }} className="space-y-6">
-        
+
+        {/* PONTE INVISÍVEL */}
         <input type="hidden" name="photo_url" value={formData.photo_url} />
         <input type="hidden" name="baptism_date" value={formData.baptism_date} />
         <input type="hidden" name="church_id" value={formData.church_id} />
         <input type="hidden" name="role_id" value={formData.role_id} />
         <input type="hidden" name="registration_number" value={formData.registration_number} />
-        <input type="hidden" name="spouse_name" value={formData.spouse_name} />
-        <input type="hidden" name="father_name" value={formData.father_name} />
-        <input type="hidden" name="mother_name" value={formData.mother_name} />
 
         <div className="space-y-4">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 pb-2"><User className="w-4 h-4 text-emerald-500" /> Dados Pessoais</h2>
@@ -270,9 +274,13 @@ export default function NewMemberForm() {
                 <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">E-mail</label><input name="email" type="text" className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
                 <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Telefone</label><input name="phone" type="text" value={formData.phone} onChange={handlePhoneChange} className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white" /></div>
                 <div className="col-span-12 md:col-span-3">
-                    <label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Naturalidade</label>
+                    <label className="text-[10px] uppercase text-white font-bold pl-1 mb-1 block">Naturalidade (UF / Cidade)</label>
                     <div className="flex gap-2">
-                        <select name="nationality_state" value={formData.nationality_state} onChange={(e) => setFormData({...formData, nationality_state: e.target.value})} className="w-20 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option>UF</option>{states.map((s:any)=><option key={s.id} value={s.sigla}>{s.sigla}</option>)}</select>
+                        {/* INJEÇÃO DO ONCHANGE COM FETCHCITIES E LIMPEZA DE CIDADE AQUI */}
+                        <select name="nationality_state" value={formData.nationality_state} onChange={(e) => {
+                            setFormData({...formData, nationality_state: e.target.value, nationality_city: ""});
+                            fetchCities(e.target.value);
+                        }} className="w-20 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option>UF</option>{states.map((s:any)=><option key={s.id} value={s.sigla}>{s.sigla}</option>)}</select>
                         <select name="nationality_city" value={formData.nationality_city} onChange={(e) => setFormData({...formData, nationality_city: e.target.value})} className="flex-1 bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-white text-xs"><option>{formData.nationality_city || "Cidade"}</option>{cities.map((c:any)=><option key={c.id} value={c.nome}>{c.nome}</option>)}</select>
                     </div>
                 </div>
