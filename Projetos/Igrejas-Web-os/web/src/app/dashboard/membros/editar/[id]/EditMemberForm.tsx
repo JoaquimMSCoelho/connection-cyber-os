@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { ArrowLeft, Save, Loader2, Archive, Search, User, MapPin, Briefcase, Activity, Camera, Droplets, Church, Hash, AlertTriangle, History } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Archive, Search, User, MapPin, Briefcase, Activity, Camera, Droplets, Church, Hash, AlertTriangle, History, Wand2 } from "lucide-react";
 import Link from "next/link";
-import { updateMemberAction, archiveMemberAction } from "@/app/dashboard/membros/actions";
+import { updateMemberAction, archiveMemberAction, getNextRegistrationNumberAction } from "@/app/dashboard/membros/actions";
 import { useFormStatus } from "react-dom";
 
 const validaCPF = (cpf: string) => { cpf = cpf.replace(/\D/g, ''); return cpf.length === 11; }; 
@@ -55,7 +55,7 @@ function SubmitButton({ formDisabled }: { formDisabled?: boolean }) {
 function ArchiveButton() {
     const { pending } = useFormStatus();
     return (
-      <button formAction={async (formData) => { await archiveMemberAction(formData); }} disabled={pending} className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-sm font-medium transition-colors border border-red-500/20 hover:border-red-500/50" onClick={(e) => { if (!confirm("Tem certeza?")) e.preventDefault(); }}>
+      <button formAction={async (formData) => { await archiveMemberAction(formData); }} disabled={pending} className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-sm font-medium transition-colors border border-red-500/20 hover:border-red-500/50" onClick={(e) => { if (!confirm("Tem certeza que deseja arquivar este membro?")) e.preventDefault(); }}>
         {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Archive className="w-4 h-4" />}
         Arquivar
       </button>
@@ -66,7 +66,6 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<any>(null);
   
-  // ESTADOS MESTRES (MASTER DATA)
   const [churches, setChurches] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [states, setStates] = useState<any[]>([]);
@@ -89,6 +88,7 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
   const [loadingCep, setLoadingCep] = useState(false);
   const [uploading, setUploading] = useState(false);
   
+  const [generatingMatricula, setGeneratingMatricula] = useState(false);
   const [cpfError, setCpfError] = useState("");
   const [matriculaError, setMatriculaError] = useState("");
   const [serverError, setServerError] = useState("");
@@ -113,7 +113,12 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
       if (civilRes.data) setCivilStatuses(civilRes.data);
       if (genderRes.data) setGenders(genderRes.data);
 
-      fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome").then(res => res.json()).then(data => setStates(data));
+      fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome")
+        .then(res => res.json())
+        .then(data => {
+            const hasDF = data.some((s:any) => s.sigla === 'DF');
+            setStates(hasDF ? data : [...data, { id: 53, sigla: 'DF', nome: 'Distrito Federal' }]);
+        });
 
       const { data: memberData } = await supabase.from("members").select("*").eq("id", memberId).single();
 
@@ -156,15 +161,30 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
 
   const fetchCities = async (uf: string) => {
     if (!uf) return;
-
+    setCities([]); 
+    
     if (uf === 'DF') {
         const supabase = createClient();
-        const { data } = await supabase.from("settings_custom_regions").select("id, name").eq("state_uf", "DF").order("name");
-        if (data) setCities(data.map((d: any) => ({ id: d.id, nome: d.name }))); 
+        try {
+            const { data, error } = await supabase.from("settings_custom_regions").select("id, name").eq("state_uf", "DF").order("name");
+            if (error) throw error;
+            if (data && data.length > 0) {
+                 setCities(data.map((d: any) => ({ id: d.id, nome: d.name })));
+            } else {
+                 setCities([{ id: 'fallback', nome: 'Brasília' }]);
+            }
+        } catch (e) {
+            console.error("Erro ao buscar DF customizado", e);
+            setCities([{ id: 'fallback', nome: 'Brasília' }]);
+        }
     } else {
-        const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
-        const data = await res.json();
-        setCities(data);
+        try {
+            const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
+            const data = await res.json();
+            setCities(data);
+        } catch(e) {
+            console.error("Erro IBGE", e);
+        }
     }
   };
 
@@ -194,6 +214,21 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
       } else {
           setMatriculaError("");
       }
+  };
+
+  const handleGenerateMatricula = async () => {
+    setGeneratingMatricula(true);
+    setMatriculaError("");
+    
+    const isActive = formData.ecclesiastical_status === 'ACTIVE';
+    const result = await getNextRegistrationNumberAction(isActive);
+    
+    if (result.success && result.data) {
+        setFormData(prev => ({ ...prev, registration_number: result.data }));
+    } else {
+        setMatriculaError("Falha ao consultar servidor.");
+    }
+    setGeneratingMatricula(false);
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
@@ -272,42 +307,61 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       
-      {/* HEADER */}
+      {/* HEADER COMPACTADO À DIREITA COM NOVA MALHA GEOMÉTRICA */}
       <div className="grid grid-cols-12 gap-6 pb-6 border-b border-neutral-800 items-center">
-        <div className="col-span-12 lg:col-span-3 flex flex-col gap-4">
+        
+        {/* LADO ESQUERDO: Título e Voltar (Fonte reduzida para text-lg / 18px) */}
+        <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
             <Link href="/dashboard/membros" className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors text-sm w-fit"><ArrowLeft className="w-4 h-4" /> Voltar para Gestão</Link>
-            <div><h1 className="text-2xl font-bold text-white tracking-tight">{member.full_name}</h1><p className="text-sm text-neutral-400">Edição de Cadastro</p></div>
+            <div><h1 className="text-lg font-bold text-white tracking-tight">{member.full_name}</h1><p className="text-sm text-neutral-400">Edição de Cadastro</p></div>
         </div>
-        <div className="col-span-12 lg:col-span-2 lg:col-start-5 flex justify-end pr-4">
-            <div className="w-32 h-32 rounded-full bg-neutral-900 border-2 border-dashed border-neutral-700 flex items-center justify-center relative overflow-hidden group hover:border-emerald-500 transition-colors shadow-xl">
-                {formData.photo_url ? (<img src={formData.photo_url} alt="Foto" className="w-full h-full object-cover" />) : (<div className="flex flex-col items-center gap-1 text-neutral-500 group-hover:text-emerald-500">{uploading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Camera className="w-8 h-8" />}<span className="text-[10px] font-bold uppercase">Foto</span></div>)}
-                <input type="file" accept="image/*" onChange={handlePhotoUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-            </div>
-        </div>
-        <div className="col-span-12 lg:col-span-6 pl-0">
+
+        {/* CENTRO DIREITA: Campos Comprimidos (Ocupando 5 colunas a partir da 6) */}
+        <div className="col-span-12 lg:col-span-5 lg:col-start-6 pl-0">
             <div className="grid grid-cols-12 gap-3 items-end">
+                {/* Linha 1: 50/50 interno */}
                 <div className="col-span-6"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Church className="w-3 h-3 text-emerald-500"/> Igreja Atual</label><select name="church_id" value={formData.church_id} onChange={(e) => setFormData({...formData, church_id: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white cursor-pointer focus:border-emerald-500 outline-none text-xs"><option value="">Selecione...</option>{churches.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
                 <div className="col-span-6"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Briefcase className="w-3 h-3 text-emerald-500"/> Cargo</label><select name="role_id" value={formData.role_id} onChange={(e) => setFormData({...formData, role_id: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white cursor-pointer focus:border-emerald-500 outline-none text-xs"><option value="">Selecione...</option>{roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
                 
+                {/* Linha 2: 33/33/33 interno */}
                 <div className="col-span-4">
                     <label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Hash className="w-3 h-3 text-yellow-500"/> Matrícula</label>
-                    <input 
-                        name="registration_number" 
-                        type="text" 
-                        placeholder="Auto ou digite..." 
-                        value={formData.registration_number} 
-                        onChange={(e) => {
-                            setFormData({...formData, registration_number: e.target.value});
-                            if (matriculaError) setMatriculaError("");
-                        }}
-                        onBlur={() => checkMatriculaExists(formData.registration_number)}
-                        className={`w-full bg-neutral-900 border rounded-lg p-2 text-yellow-500 font-mono text-center text-xs outline-none transition-colors ${matriculaError ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-neutral-800 focus:border-yellow-500'}`} 
-                    />
+                    <div className="relative flex items-center">
+                        <input 
+                            name="registration_number" 
+                            type="text" 
+                            placeholder="Auto ou digite..." 
+                            value={formData.registration_number} 
+                            onChange={(e) => {
+                                setFormData({...formData, registration_number: e.target.value});
+                                if (matriculaError) setMatriculaError("");
+                            }}
+                            onBlur={() => checkMatriculaExists(formData.registration_number)}
+                            className={`w-full bg-neutral-900 border rounded-lg p-2 pr-8 text-yellow-500 font-mono text-center text-xs outline-none transition-colors ${matriculaError ? 'border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-neutral-800 focus:border-yellow-500'}`} 
+                        />
+                        <button 
+                            type="button" 
+                            onClick={handleGenerateMatricula}
+                            disabled={generatingMatricula}
+                            title="Gerar próximo número livre"
+                            className="absolute right-1 p-1.5 text-neutral-500 hover:text-yellow-500 hover:bg-neutral-800 rounded-md transition-colors disabled:opacity-50"
+                        >
+                            {generatingMatricula ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                        </button>
+                    </div>
                     {matriculaError && <span className="text-red-500 text-[10px] font-bold mt-1 block leading-tight">{matriculaError}</span>}
                 </div>
-
+                
                 <div className="col-span-4"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Droplets className="w-3 h-3 text-cyan-500"/> Batismo</label><input name="baptism_date" type="text" placeholder="DD/MM/AAAA" value={formData.baptism_date} onChange={(e) => handleDateChange(e, 'baptism_date')} maxLength={10} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white text-center focus:border-cyan-500 outline-none text-xs" /></div>
                 <div className="col-span-4"><label className="text-[10px] uppercase text-neutral-500 font-bold mb-1 block">Tempo</label><div className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-cyan-500 font-bold text-xs border-l-2 border-l-cyan-500/50 truncate">{timeBaptized}</div></div>
+            </div>
+        </div>
+
+        {/* EXTREMA DIREITA: Foto cravada nas colunas 11 e 12 */}
+        <div className="col-span-12 lg:col-span-2 lg:col-start-11 flex justify-end pr-4">
+            <div className="w-32 h-32 rounded-full bg-neutral-900 border-2 border-dashed border-neutral-700 flex items-center justify-center relative overflow-hidden group hover:border-emerald-500 transition-colors shadow-xl">
+                {formData.photo_url ? (<img src={formData.photo_url} alt="Foto" className="w-full h-full object-cover" />) : (<div className="flex flex-col items-center gap-1 text-neutral-500 group-hover:text-emerald-500">{uploading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Camera className="w-8 h-8" />}<span className="text-[10px] font-bold uppercase">Foto</span></div>)}
+                <input type="file" accept="image/*" onChange={handlePhotoUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
             </div>
         </div>
       </div>
@@ -449,7 +503,6 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
                     </div>
                 </div>
                 
-                {/* FRENTE A - FASE 5: INJEÇÃO DO BOTÃO HISTÓRICO NO RODAPÉ */}
                 <div className="flex items-center gap-4 w-full xl:w-auto justify-end">
                     <ArchiveButton />
                     

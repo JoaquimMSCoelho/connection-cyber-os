@@ -1,5 +1,5 @@
 ﻿PROJETO: IGREJA WEB OS
-Atualizado em: 02/16/2026 00:10:06
+Atualizado em: 02/16/2026 03:08:28
 ---
   DIR: web
   DIR: web_backup_20260202_2344_MembrosV1
@@ -44,9 +44,24 @@ Atualizado em: 02/16/2026 00:10:06
         FILE: globals.css
         FILE: login-form.tsx
         FILE: page.tsx
+          DIR: configuracoes
           DIR: igrejas
           DIR: membros
           FILE: page.tsx
+            DIR: cargos
+            DIR: escolaridade
+            DIR: estado-civil
+            DIR: genero
+            DIR: profissoes
+            DIR: regioes-df
+            FILE: actions.ts
+            FILE: page.tsx
+              FILE: page.tsx
+              FILE: page.tsx
+              FILE: page.tsx
+              FILE: page.tsx
+              FILE: page.tsx
+              FILE: page.tsx
             DIR: editar
             DIR: nova
             DIR: setores
