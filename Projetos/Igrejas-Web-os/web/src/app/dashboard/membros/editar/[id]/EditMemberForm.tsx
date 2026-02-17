@@ -6,6 +6,7 @@ import { ArrowLeft, Save, Loader2, Archive, Search, User, MapPin, Briefcase, Act
 import Link from "next/link";
 import { updateMemberAction, archiveMemberAction, getNextRegistrationNumberAction } from "@/app/dashboard/membros/actions";
 import { useFormStatus } from "react-dom";
+import MemberTimelineModal from "@/components/dashboard/MemberTimelineModal"; // INJEÇÃO DA FASE 7
 
 const validaCPF = (cpf: string) => { cpf = cpf.replace(/\D/g, ''); return cpf.length === 11; }; 
 
@@ -66,6 +67,9 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<any>(null);
   
+  // INJEÇÃO FASE 7: Estado do Modal
+  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
+
   const [churches, setChurches] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [states, setStates] = useState<any[]>([]);
@@ -307,23 +311,19 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       
-      {/* HEADER COMPACTADO À DIREITA COM NOVA MALHA GEOMÉTRICA */}
+      {/* HEADER COMPACTADO À DIREITA */}
       <div className="grid grid-cols-12 gap-6 pb-6 border-b border-neutral-800 items-center">
         
-        {/* LADO ESQUERDO: Título e Voltar (Fonte reduzida para text-lg / 18px) */}
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
             <Link href="/dashboard/membros" className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors text-sm w-fit"><ArrowLeft className="w-4 h-4" /> Voltar para Gestão</Link>
             <div><h1 className="text-lg font-bold text-white tracking-tight">{member.full_name}</h1><p className="text-sm text-neutral-400">Edição de Cadastro</p></div>
         </div>
 
-        {/* CENTRO DIREITA: Campos Comprimidos (Ocupando 5 colunas a partir da 6) */}
         <div className="col-span-12 lg:col-span-5 lg:col-start-6 pl-0">
             <div className="grid grid-cols-12 gap-3 items-end">
-                {/* Linha 1: 50/50 interno */}
                 <div className="col-span-6"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Church className="w-3 h-3 text-emerald-500"/> Igreja Atual</label><select name="church_id" value={formData.church_id} onChange={(e) => setFormData({...formData, church_id: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white cursor-pointer focus:border-emerald-500 outline-none text-xs"><option value="">Selecione...</option>{churches.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
                 <div className="col-span-6"><label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Briefcase className="w-3 h-3 text-emerald-500"/> Cargo</label><select name="role_id" value={formData.role_id} onChange={(e) => setFormData({...formData, role_id: e.target.value})} className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white cursor-pointer focus:border-emerald-500 outline-none text-xs"><option value="">Selecione...</option>{roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
                 
-                {/* Linha 2: 33/33/33 interno */}
                 <div className="col-span-4">
                     <label className="text-[10px] uppercase text-white font-bold mb-1 block flex items-center gap-1"><Hash className="w-3 h-3 text-yellow-500"/> Matrícula</label>
                     <div className="relative flex items-center">
@@ -344,7 +344,7 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
                             onClick={handleGenerateMatricula}
                             disabled={generatingMatricula}
                             title="Gerar próximo número livre"
-                            className="absolute right-1 p-1.5 text-neutral-500 hover:text-yellow-500 hover:bg-neutral-800 rounded-md transition-colors disabled:opacity-50"
+                            className="absolute right-1 p-1 text-neutral-500 hover:text-yellow-500 hover:bg-neutral-800 rounded-md transition-colors disabled:opacity-50"
                         >
                             {generatingMatricula ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
                         </button>
@@ -357,7 +357,6 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
             </div>
         </div>
 
-        {/* EXTREMA DIREITA: Foto cravada nas colunas 11 e 12 */}
         <div className="col-span-12 lg:col-span-2 lg:col-start-11 flex justify-end pr-4">
             <div className="w-32 h-32 rounded-full bg-neutral-900 border-2 border-dashed border-neutral-700 flex items-center justify-center relative overflow-hidden group hover:border-emerald-500 transition-colors shadow-xl">
                 {formData.photo_url ? (<img src={formData.photo_url} alt="Foto" className="w-full h-full object-cover" />) : (<div className="flex flex-col items-center gap-1 text-neutral-500 group-hover:text-emerald-500">{uploading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Camera className="w-8 h-8" />}<span className="text-[10px] font-bold uppercase">Foto</span></div>)}
@@ -391,7 +390,6 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
       }} className="space-y-6">
         
         <input type="hidden" name="id" value={member.id} />
-        
         <input type="hidden" name="photo_url" value={formData.photo_url} />
         <input type="hidden" name="baptism_date" value={formData.baptism_date} />
         <input type="hidden" name="church_id" value={formData.church_id} />
@@ -506,9 +504,10 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
                 <div className="flex items-center gap-4 w-full xl:w-auto justify-end">
                     <ArchiveButton />
                     
+                    {/* INJEÇÃO FASE 7: Botão agora abre o Modal */}
                     <button 
                         type="button" 
-                        onClick={() => alert("O Dossiê do Membro será implementado na Fase 7.")}
+                        onClick={() => setIsTimelineOpen(true)}
                         className="flex items-center gap-2 px-4 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg text-sm font-medium transition-colors border border-neutral-700"
                     >
                         <History className="w-4 h-4" /> Histórico
@@ -520,6 +519,15 @@ export default function EditMemberForm({ memberId }: { memberId: string }) {
             </div>
         </div>
       </form>
+
+      {/* INJEÇÃO FASE 7: Renderização Condicional do Modal */}
+      <MemberTimelineModal 
+        isOpen={isTimelineOpen} 
+        onClose={() => setIsTimelineOpen(false)} 
+        memberId={member.id} 
+        memberName={member.full_name} 
+      />
+
     </div>
   );
 }

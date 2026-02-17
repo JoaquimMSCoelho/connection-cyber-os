@@ -23,7 +23,7 @@ export async function createMemberAction(formData: FormData) {
   const gender = formData.get("gender") as string;
   const civil_status = formData.get("civil_status") as string;
   const profession = formData.get("profession") as string;
-  const photo_url = formData.get("photo_url") as string; // Link da Foto
+  const photo_url = formData.get("photo_url") as string; 
   
   // 2. Contato e Origem
   const email = formData.get("email") as string;
@@ -31,7 +31,7 @@ export async function createMemberAction(formData: FormData) {
   const nationality_city = formData.get("nationality_city") as string;
   const nationality_state = formData.get("nationality_state") as string;
   const schooling = formData.get("schooling") as string;
-  const origin_church = formData.get("origin_church") as string; // Restaurado
+  const origin_church = formData.get("origin_church") as string; 
 
   // 3. Documentação
   const cpf = formData.get("cpf") as string;
@@ -43,13 +43,13 @@ export async function createMemberAction(formData: FormData) {
   const role_id = formData.get("role_id") as string;
   const church_id = formData.get("church_id") as string;
   const ecclesiastical_status = formData.get("ecclesiastical_status") as string || "ACTIVE";
-  const baptism_date = formData.get("baptism_date") as string; // Restaurado
+  const baptism_date = formData.get("baptism_date") as string; 
   
   // 5. Familiares
   const spouse_name = formData.get("spouse_name") as string;
   const father_name = formData.get("father_name") as string;
   const mother_name = formData.get("mother_name") as string;
-  const marriage_date = formData.get("marriage_date") as string; // Restaurado
+  const marriage_date = formData.get("marriage_date") as string; 
 
   // 6. Endereço
   const zip_code = formData.get("zip_code") as string;
@@ -96,7 +96,7 @@ export async function createMemberAction(formData: FormData) {
 
   const { error } = await supabase.from("members").insert({
     full_name,
-    birth_date: parseDateBrToIso(birth_date), // INJEÇÃO FUNCIONAL (Tradução de Data)
+    birth_date: parseDateBrToIso(birth_date),
     gender,
     civil_status,
     profession,
@@ -117,8 +117,8 @@ export async function createMemberAction(formData: FormData) {
     spouse_name,
     father_name,
     mother_name,
-    marriage_date: parseDateBrToIso(marriage_date), // INJEÇÃO FUNCIONAL (Tradução de Data)
-    baptism_date: parseDateBrToIso(baptism_date),   // INJEÇÃO FUNCIONAL (Tradução de Data)
+    marriage_date: parseDateBrToIso(marriage_date),
+    baptism_date: parseDateBrToIso(baptism_date),
     origin_church,
     zip_code,
     address,
@@ -133,7 +133,7 @@ export async function createMemberAction(formData: FormData) {
 
   if (error) {
     console.error("Erro ao criar membro:", error);
-    if (error.code === '23505') { // Captura da trava física do Banco de Dados
+    if (error.code === '23505') { 
         return { success: false, message: "Erro: Matrícula ou CPF já existem no banco de dados." };
     }
     return { success: false, message: "Erro de banco de dados ao cadastrar membro." };
@@ -150,7 +150,6 @@ export async function updateMemberAction(formData: FormData) {
   
   if (!id) return { success: false, message: "ID obrigatório." };
 
-  // Captura de TODOS os campos
   const full_name = formData.get("full_name") as string;
   const birth_date = formData.get("birth_date") as string;
   const gender = formData.get("gender") as string;
@@ -163,7 +162,7 @@ export async function updateMemberAction(formData: FormData) {
   const nationality_city = formData.get("nationality_city") as string;
   const nationality_state = formData.get("nationality_state") as string;
   const schooling = formData.get("schooling") as string;
-  const origin_church = formData.get("origin_church") as string; // Restaurado
+  const origin_church = formData.get("origin_church") as string; 
 
   const cpf = formData.get("cpf") as string;
   const rg = formData.get("rg") as string;
@@ -173,12 +172,12 @@ export async function updateMemberAction(formData: FormData) {
   const role_id = formData.get("role_id") as string;
   const church_id = formData.get("church_id") as string;
   const ecclesiastical_status = formData.get("ecclesiastical_status") as string;
-  const baptism_date = formData.get("baptism_date") as string; // Restaurado
+  const baptism_date = formData.get("baptism_date") as string; 
   
   const spouse_name = formData.get("spouse_name") as string;
   const father_name = formData.get("father_name") as string;
   const mother_name = formData.get("mother_name") as string;
-  const marriage_date = formData.get("marriage_date") as string; // Restaurado
+  const marriage_date = formData.get("marriage_date") as string; 
   
   const zip_code = formData.get("zip_code") as string;
   const address = formData.get("address") as string;
@@ -188,7 +187,6 @@ export async function updateMemberAction(formData: FormData) {
   const state = formData.get("state") as string;
   const financial_status = formData.get("financial_status") as string;
 
-  // --- TRAVA 1: VALIDAÇÃO DE CPF DUPLICADO (Ignorando o próprio membro) ---
   if (cpf && cpf.trim() !== "") {
     const { data: cpfExists } = await supabase.from("members").select("id").eq("cpf", cpf).neq("id", id).single();
     if (cpfExists) {
@@ -196,19 +194,15 @@ export async function updateMemberAction(formData: FormData) {
     }
   }
 
-  // --- LÓGICA DE MATRÍCULA E TRAVA DE DUPLICIDADE (Edição) ---
   let matriculaAtual = formData.get("registration_number") as string;
 
   if (!matriculaAtual || matriculaAtual.trim() === "") {
-      // Se apagou a matrícula na tela, gera uma nova baseada no status atual
       const { data: novaMatricula } = await supabase.rpc('get_next_matricula', { is_active: ecclesiastical_status === 'ACTIVE' });
       if (novaMatricula) matriculaAtual = novaMatricula;
   } else if (matriculaAtual.startsWith('-') && ecclesiastical_status === 'ACTIVE') {
-      // Transição de Inativo para Ativo (Converte matrícula negativa em definitiva)
       const { data: matriculaDefinitiva } = await supabase.rpc('get_next_matricula', { is_active: true });
       if (matriculaDefinitiva) matriculaAtual = matriculaDefinitiva;
   } else {
-      // Se é uma matrícula digitada manualmente ou não mudou, verifica se já não pertence a outro
       const { data: matExists } = await supabase.from("members").select("id").eq("registration_number", matriculaAtual).neq("id", id).single();
       if (matExists) {
           return { success: false, message: `Operação abortada: A Matrícula ${matriculaAtual} já está em uso por outro membro.` };
@@ -219,7 +213,7 @@ export async function updateMemberAction(formData: FormData) {
     .from("members")
     .update({
       full_name,
-      birth_date: parseDateBrToIso(birth_date), // INJEÇÃO FUNCIONAL (Tradução de Data)
+      birth_date: parseDateBrToIso(birth_date),
       gender,
       civil_status,
       profession,
@@ -240,8 +234,8 @@ export async function updateMemberAction(formData: FormData) {
       spouse_name,
       father_name,
       mother_name,
-      marriage_date: parseDateBrToIso(marriage_date), // INJEÇÃO FUNCIONAL (Tradução de Data)
-      baptism_date: parseDateBrToIso(baptism_date),   // INJEÇÃO FUNCIONAL (Tradução de Data)
+      marriage_date: parseDateBrToIso(marriage_date),
+      baptism_date: parseDateBrToIso(baptism_date),
       origin_church,
       zip_code,
       address,
@@ -256,7 +250,7 @@ export async function updateMemberAction(formData: FormData) {
 
   if (error) {
     console.error("Erro ao atualizar:", error);
-    if (error.code === '23505') { // Captura da trava física do Banco de Dados
+    if (error.code === '23505') { 
         return { success: false, message: "Erro: Matrícula ou CPF já existem no banco de dados." };
     }
     return { success: false, message: "Erro de banco de dados ao atualizar dados." };
@@ -318,7 +312,6 @@ export async function restoreMemberAction(formData: FormData) {
 export async function getNextRegistrationNumberAction(isActive: boolean) {
   const supabase = await createClient();
   
-  // Chama a função RPC (Procedure) que já criamos no banco de dados
   const { data: nextMatricula, error } = await supabase.rpc('get_next_matricula', { is_active: isActive });
   
   if (error) {
@@ -327,4 +320,99 @@ export async function getNextRegistrationNumberAction(isActive: boolean) {
   }
   
   return { success: true, data: nextMatricula };
+}
+
+// --- AÇÃO 6 (ATUALIZADA FASE 7): LER FICHA E TIMELINE PELO ID (Motor do Modal) ---
+export async function getMemberTimelineAction(memberId: string) {
+  const supabase = await createClient();
+  
+  // 1. Busca a Ficha Completa do Membro
+  const { data: member, error: memberError } = await supabase
+    .from("members")
+    .select(`
+      *,
+      churches ( name ),
+      ecclesiastical_roles ( name )
+    `)
+    .eq("id", memberId)
+    .single();
+
+  if (memberError || !member) {
+    console.error("Erro ao buscar perfil:", memberError);
+    return { success: false, data: null };
+  }
+
+  // 2. Busca a Linha do Tempo (Dossiê)
+  const { data: timeline, error: timelineError } = await supabase
+    .from("member_timeline")
+    .select("*")
+    .eq("member_id", memberId)
+    .order("created_at", { ascending: false }); 
+    
+  if (timelineError) {
+    console.error("Erro ao buscar timeline:", timelineError);
+    return { success: false, data: null };
+  }
+  
+  // 3. Devolve o Pacote Master unificado para o Modal
+  return { 
+    success: true, 
+    data: {
+      profile: {
+        ...member,
+        church_name: (member.churches as any)?.name || "Nenhuma Igreja",
+        role_name: (member.ecclesiastical_roles as any)?.name || "Nenhum Cargo"
+      },
+      timeline: timeline || []
+    } 
+  };
+}
+
+// --- AÇÃO 7 (NOVA E EVOLUÍDA): BUSCAR PACOTE DOSSIÊ + FICHA CADASTRAL (Vetor 2) ---
+export async function getMemberByMatriculaWithTimelineAction(matricula: string) {
+  const supabase = await createClient();
+
+  if (!matricula || matricula.trim() === "") {
+    return { success: false, message: "Digite uma matrícula válida." };
+  }
+
+  // 1. Busca TODOS OS DADOS do membro (*) e cruza com igrejas e cargos (Joins)
+  const { data: member, error: memberError } = await supabase
+    .from("members")
+    .select(`
+      *,
+      churches ( name ),
+      ecclesiastical_roles ( name )
+    `)
+    .eq("registration_number", matricula)
+    .single();
+
+  if (memberError || !member) {
+    return { success: false, message: "Matrícula não encontrada no sistema." };
+  }
+
+  // 2. Com o ID do membro em mãos, busca a linha do tempo (Dossiê)
+  const { data: timeline, error: timelineError } = await supabase
+    .from("member_timeline")
+    .select("*")
+    .eq("member_id", member.id)
+    .order("created_at", { ascending: false });
+
+  if (timelineError) {
+    console.error("Erro ao buscar timeline do pacote:", timelineError);
+    return { success: false, message: "Erro ao carregar o histórico." };
+  }
+
+  // 3. Monta o Objeto Completo de Retorno (Ficha Completa Enriquecida + Timeline)
+  return { 
+    success: true, 
+    data: {
+      profile: {
+        ...member, // Injeta TODAS as colunas do membro (CPF, Endereço, etc.)
+        church_name: (member.churches as any)?.name || "Nenhuma Igreja",
+        role_name: (member.ecclesiastical_roles as any)?.name || "Nenhum Cargo"
+      },
+      timeline: timeline || []
+    }
+  };
 }

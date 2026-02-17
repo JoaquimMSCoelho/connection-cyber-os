@@ -1,18 +1,18 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { Users, DollarSign, Building } from "lucide-react";
+import QuickTimelineSearch from "@/components/dashboard/QuickTimelineSearch";
 
 export default async function DashboardPage() {
-  // 1. Proteção de Rota (Server-Side)
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/"); // Chuta para login se não estiver logado
+    redirect("/");
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* CABEÇALHO DA PÁGINA */}
       <div>
         <h1 className="text-2xl font-bold text-white tracking-tight">
@@ -23,9 +23,13 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* GRID DE CARDS (KPIs) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* CARD 1 */}
+      {/* GRID DE CARDS (KPIs) + BUSCA RÁPIDA (Reordenado Fase 7) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        
+        {/* CARD 1 (DESTAQUE MÁXIMO): HISTÓRICO MEMBRO */}
+        <QuickTimelineSearch />
+        
+        {/* CARD 2: RECEITA */}
         <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-2xl relative overflow-hidden group hover:border-emerald-500/30 transition-colors">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 group-hover:bg-emerald-500/10 transition-colors" />
           <div className="flex items-center gap-4">
@@ -39,8 +43,9 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* CARD 2 */}
+        {/* CARD 3: MEMBROS ATIVOS */}
         <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-2xl relative overflow-hidden group hover:border-emerald-500/30 transition-colors">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 group-hover:bg-emerald-500/10 transition-colors" />
           <div className="flex items-center gap-4">
             <div className="p-3 bg-neutral-800 rounded-xl text-emerald-500">
               <Users className="w-6 h-6" />
@@ -52,8 +57,9 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* CARD 3 */}
+        {/* CARD 4: IGREJAS NO SETOR */}
         <div className="bg-neutral-900/50 border border-neutral-800 p-6 rounded-2xl relative overflow-hidden group hover:border-emerald-500/30 transition-colors">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 group-hover:bg-emerald-500/10 transition-colors" />
           <div className="flex items-center gap-4">
             <div className="p-3 bg-neutral-800 rounded-xl text-emerald-500">
               <Building className="w-6 h-6" />
@@ -64,6 +70,7 @@ export default async function DashboardPage() {
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );

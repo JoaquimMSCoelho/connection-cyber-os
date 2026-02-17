@@ -1,5 +1,5 @@
 ﻿PROJETO: IGREJA WEB OS
-Atualizado em: 02/16/2026 03:08:28
+Atualizado em: 02/16/2026 17:58:53
 ---
   DIR: web
   DIR: web_backup_20260202_2344_MembrosV1
@@ -17,6 +17,7 @@ Atualizado em: 02/16/2026 03:08:28
   FILE: prompt-implementacao.txt
   FILE: START_IgrejaWebOS.ps1
   FILE: START_SESSION.ps1
+  FILE: ZZ-SISTEMA MEMBROS WEB - atualização (1) (3).pdf
     DIR: public
     DIR: src
     FILE: .env.local
