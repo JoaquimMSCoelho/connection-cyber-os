@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { X, Clock, Loader2, ArrowRight, ShieldAlert, CheckCircle2, UserPlus, BookOpen, Printer, FileText, User, MapPin, Phone, Hash, ChevronDown } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Clock, Loader2, ArrowRight, ShieldAlert, CheckCircle2, UserPlus, BookOpen, Printer, FileText, User, MapPin, Phone, Hash, ChevronDown, Briefcase, Droplets, Church, Activity } from "lucide-react";
 import { getMemberTimelineAction } from "@/app/dashboard/membros/actions";
 
 interface MemberTimelineModalProps {
@@ -13,13 +13,31 @@ interface MemberTimelineModalProps {
 
 type PrintMode = 'FICHA' | 'DOSSIE' | 'AMBOS' | null;
 
+// Função de Cálculo Espelhada
+function calculateTimeBaptized(dateString: string | null) {
+    if (!dateString) return "---";
+    let formattedDate = dateString;
+    if (dateString.includes('-')) {
+        const parts = dateString.split('T')[0].split('-');
+        if(parts.length === 3) formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    const parts = formattedDate.split('/');
+    if(parts.length !== 3) return "---";
+    const baptismDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+    const now = new Date();
+    if (isNaN(baptismDate.getTime())) return "---";
+    let years = now.getFullYear() - baptismDate.getFullYear();
+    let months = now.getMonth() - baptismDate.getMonth();
+    if (months < 0 || (months === 0 && now.getDate() < baptismDate.getDate())) { years--; months += 12; }
+    return `${years} a e ${months} m`;
+}
+
 export default function MemberTimelineModal({ isOpen, onClose, memberId, memberName }: MemberTimelineModalProps) {
   const [events, setEvents] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'FICHA' | 'DOSSIE'>('FICHA');
   
-  // Estados do Motor PDF Inteligente
   const [printMenuOpen, setPrintMenuOpen] = useState(false);
   const [printMode, setPrintMode] = useState<PrintMode>(null);
 
@@ -40,6 +58,8 @@ export default function MemberTimelineModal({ isOpen, onClose, memberId, memberN
 
   if (!isOpen) return null;
 
+  const isPrinting = printMode !== null;
+
   const getEventStyle = (type: string) => {
     switch (type) {
       case 'CRIACAO': return { icon: <UserPlus className="w-4 h-4 text-emerald-500" />, bg: "bg-emerald-500/10", border: "border-emerald-500/20" };
@@ -51,273 +71,402 @@ export default function MemberTimelineModal({ isOpen, onClose, memberId, memberN
     }
   };
 
-  const formatDate = (isoString: string) => {
+  const formatDate = (isoString: string | null) => {
     if (!isoString) return "---";
+    if (isoString.includes('/')) return isoString; 
     const date = new Date(isoString);
-    return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
+    return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
   };
 
   const formatDateTime = (isoString: string) => {
     if (!isoString) return "---";
     const date = new Date(isoString);
-    return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
+    return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
   };
 
-  // MOTOR PDF INTELIGENTE: Modela a tela, espera 300ms e aciona a impressão.
+  const getStatusColor = (status: string) => {
+    switch (status) {
+        case 'ACTIVE': return "text-[#28A745]"; 
+        case 'OBSERVATION': return "text-[#FFD700]"; 
+        case 'INACTIVE': return "text-[#DC3545]"; 
+        case 'UNFIT': return "text-[#E9ECEF]"; 
+        default: return "text-white";
+    }
+  };
+
   const handlePrint = (mode: PrintMode) => {
     setPrintMode(mode);
     setPrintMenuOpen(false);
     
-    // O Timeout é essencial para o React renderizar as divs ocultas antes de chamar a janela do Windows.
     setTimeout(() => {
       window.print();
-      setPrintMode(null); // Devolve o layout ao normal após a janela fechar
-    }, 300);
+      setTimeout(() => setPrintMode(null), 100);
+    }, 300); 
   };
 
   return (
     <>
-      {/* CSS DE IMPRESSÃO - Controlado pelo estado 'printMode' */}
+      {/* ========================================================================
+        CAMADA 1: MOTOR DE IMPRESSÃO (TABELA CLÁSSICA OFICIAL)
+        Este bloco de código só existe para a impressora. Ele é ignorado pela tela.
+        Garante alinhamento perfeito no formato Papel A4.
+        ========================================================================
+      */}
       <style>{`
+        @media screen {
+          #print-document { display: none !important; }
+        }
         @media print {
+          @page { size: A4 portrait; margin: 12mm; }
           body * { visibility: hidden; }
-          #print-area, #print-area * { visibility: visible; color: black !important; }
-          #print-area { 
-            position: absolute; left: 0; top: 0; 
-            width: 100%; max-width: 100% !important; 
-            height: auto !important; max-height: none !important;
-            background: white !important; 
-            box-shadow: none !important; 
-            border: none !important; 
-            border-radius: 0 !important;
-            padding: 0 !important;
-          }
-          .no-print { display: none !important; }
-          .print-border { border-color: #ddd !important; }
-          .print-bg { background: #f9f9f9 !important; }
-          .page-break { page-break-before: always; margin-top: 40px; padding-top: 40px; border-top: 1px solid #ccc; }
+          html, body { background: white !important; height: auto !important; overflow: visible !important; }
           
-          /* Remove barras de rolagem ao imprimir */
-          .overflow-y-auto { overflow: visible !important; }
+          #print-document, #print-document * { visibility: visible; color: black !important; font-family: Arial, sans-serif !important; }
+          #print-document {
+            position: absolute; left: 0; top: 0; width: 100%;
+            background: white !important; z-index: 999999;
+          }
+          
+          .official-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          .official-table th, .official-table td { border: 1px solid #000; padding: 6px 8px; text-align: left; }
+          .official-label { font-size: 10px; font-weight: bold; color: #555 !important; display: block; text-transform: uppercase; margin-bottom: 2px; }
+          .official-value { font-size: 13px; font-weight: normal; }
+          
+          .page-break { page-break-before: always; }
+          .screen-only { display: none !important; }
         }
       `}</style>
 
-      {/* Overlay escuro de fundo */}
+      {/* DOCUMENTO DE IMPRESSÃO (Invisível na tela) */}
+      <div id="print-document">
+        
+        {/* PÁGINA 1: FICHA CADASTRAL */}
+        {(printMode === 'FICHA' || printMode === 'AMBOS') && profile && (
+          <div>
+            {/* Cabeçalho do Documento */}
+            <div style={{ textAlign: 'center', borderBottom: '2px solid black', paddingBottom: '10px', marginBottom: '20px' }}>
+              <h1 style={{ fontSize: '20px', fontWeight: 'bold', textTransform: 'uppercase', margin: 0 }}>Ficha Cadastral de Membro</h1>
+              <p style={{ fontSize: '12px', margin: '4px 0 0 0' }}>Relatório Oficial de Registro Eclesiástico</p>
+            </div>
+
+            {/* Tabela Master - Seção 1: Identificação e Eclesiástico */}
+            <table className="official-table">
+              <tbody>
+                <tr>
+                  <td colSpan={3} style={{ verticalAlign: 'top' }}>
+                    <span className="official-label">Nome Completo</span>
+                    <strong style={{ fontSize: '16px', textTransform: 'uppercase' }}>{profile.full_name}</strong>
+                  </td>
+                  <td rowSpan={4} style={{ width: '130px', textAlign: 'center', verticalAlign: 'middle', padding: '4px' }}>
+                    {profile.photo_url ? (
+                        <img src={profile.photo_url} alt="Foto" style={{ width: '115px', height: '150px', objectFit: 'cover', border: '1px solid #000' }} />
+                    ) : (
+                        <div style={{ width: '115px', height: '150px', border: '1px dashed #000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#666' }}>FOTO 3X4</div>
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <td><span className="official-label">Matrícula</span><span className="official-value"><strong>{profile.registration_number}</strong></span></td>
+                  <td><span className="official-label">Cargo Eclesiástico</span><span className="official-value">{profile.role_name}</span></td>
+                  <td><span className="official-label">Situação Financeira</span><span className="official-value">{profile.financial_status === 'UP_TO_DATE' ? 'Em Dia' : 'Pendente'}</span></td>
+                </tr>
+                <tr>
+                  <td colSpan={2}><span className="official-label">Congregação Atual Atribuída</span><span className="official-value"><strong>{profile.church_name}</strong></span></td>
+                  <td><span className="official-label">Status do Membro</span><span className="official-value">{profile.ecclesiastical_status}</span></td>
+                </tr>
+                <tr>
+                  <td colSpan={2}><span className="official-label">Igreja de Origem (Anterior)</span><span className="official-value">{profile.origin_church || "---"}</span></td>
+                  <td><span className="official-label">Data de Batismo / Tempo</span><span className="official-value">{formatDate(profile.baptism_date)} ({calculateTimeBaptized(profile.baptism_date)})</span></td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Tabela Master - Seção 2: Pessoais e Familiares */}
+            <div style={{ backgroundColor: '#f0f0f0', padding: '4px 8px', border: '1px solid black', borderBottom: 'none', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase' }}>Dados Pessoais e Familiares</div>
+            <table className="official-table">
+              <tbody>
+                <tr>
+                  <td><span className="official-label">CPF</span><span className="official-value">{profile.cpf || "---"}</span></td>
+                  <td><span className="official-label">RG / Órgão Expedidor / UF</span><span className="official-value">{profile.rg ? `${profile.rg} - ${profile.rg_issuer}/${profile.rg_state}` : "---"}</span></td>
+                  <td><span className="official-label">Data Nasc.</span><span className="official-value">{formatDate(profile.birth_date)}</span></td>
+                  <td><span className="official-label">Sexo</span><span className="official-value">{profile.gender || "---"}</span></td>
+                </tr>
+                <tr>
+                  <td><span className="official-label">Estado Civil</span><span className="official-value">{profile.civil_status || "---"}</span></td>
+                  <td><span className="official-label">Naturalidade (Cidade/UF)</span><span className="official-value">{profile.nationality_city ? `${profile.nationality_city}/${profile.nationality_state}` : "---"}</span></td>
+                  <td colSpan={2}><span className="official-label">Escolaridade</span><span className="official-value">{profile.schooling || "---"}</span></td>
+                </tr>
+                <tr>
+                  <td colSpan={2}><span className="official-label">Profissão</span><span className="official-value">{profile.profession || "---"}</span></td>
+                  <td colSpan={2}><span className="official-label">Cônjuge</span><span className="official-value">{profile.spouse_name || "---"}</span></td>
+                </tr>
+                <tr>
+                  <td colSpan={2}><span className="official-label">Nome do Pai</span><span className="official-value">{profile.father_name || "---"}</span></td>
+                  <td colSpan={2}><span className="official-label">Nome da Mãe</span><span className="official-value">{profile.mother_name || "---"}</span></td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Tabela Master - Seção 3: Contato e Endereço */}
+            <div style={{ backgroundColor: '#f0f0f0', padding: '4px 8px', border: '1px solid black', borderBottom: 'none', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase' }}>Endereço e Contato</div>
+            <table className="official-table">
+              <tbody>
+                <tr>
+                  <td><span className="official-label">Telefone / WhatsApp</span><span className="official-value">{profile.phone || "---"}</span></td>
+                  <td colSpan={3}><span className="official-label">E-mail</span><span className="official-value">{profile.email || "---"}</span></td>
+                </tr>
+                <tr>
+                  <td><span className="official-label">CEP</span><span className="official-value">{profile.zip_code || "---"}</span></td>
+                  <td colSpan={2}><span className="official-label">Logradouro / Endereço</span><span className="official-value">{profile.address || "---"}</span></td>
+                  <td><span className="official-label">Número</span><span className="official-value">{profile.number || "---"}</span></td>
+                </tr>
+                <tr>
+                  <td colSpan={2}><span className="official-label">Bairro</span><span className="official-value">{profile.neighborhood || "---"}</span></td>
+                  <td><span className="official-label">Cidade</span><span className="official-value">{profile.city || "---"}</span></td>
+                  <td><span className="official-label">UF</span><span className="official-value">{profile.state || "---"}</span></td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Rodapé Oficial de Assinaturas */}
+            <div style={{ marginTop: '50px', display: 'flex', justifyContent: 'space-between', padding: '0 40px' }}>
+              <div style={{ textAlign: 'center', width: '40%' }}>
+                <div style={{ borderBottom: '1px solid black', height: '30px', marginBottom: '5px' }}></div>
+                <span style={{ fontSize: '12px' }}>Assinatura do Membro</span>
+              </div>
+              <div style={{ textAlign: 'center', width: '40%' }}>
+                <div style={{ borderBottom: '1px solid black', height: '30px', marginBottom: '5px' }}></div>
+                <span style={{ fontSize: '12px' }}>Secretaria / Diretoria</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PÁGINA 2: O DOSSIÊ HISTÓRICO EM FORMATO DE TABELA (Se solicitado) */}
+        {(printMode === 'DOSSIE' || printMode === 'AMBOS') && profile && (
+          <div className={printMode === 'AMBOS' ? 'page-break' : ''}>
+             <div style={{ borderBottom: '2px solid black', paddingBottom: '10px', marginBottom: '20px' }}>
+              <h1 style={{ fontSize: '20px', fontWeight: 'bold', textTransform: 'uppercase', margin: 0 }}>Histórico Eclesiástico (Dossiê)</h1>
+              <p style={{ fontSize: '12px', margin: '4px 0 0 0' }}>Membro: <strong>{profile.full_name}</strong> | Matrícula: <strong>{profile.registration_number}</strong></p>
+            </div>
+
+            <table className="official-table" style={{ marginTop: '20px' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#f0f0f0' }}>
+                  <th style={{ width: '15%' }}>Data/Hora</th>
+                  <th style={{ width: '20%' }}>Tipo de Evento</th>
+                  <th style={{ width: '65%' }}>Descrição da Ocorrência</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.length === 0 ? (
+                  <tr><td colSpan={3} style={{ textAlign: 'center', padding: '20px' }}>Nenhum evento registrado no histórico deste membro.</td></tr>
+                ) : (
+                  events.map((event) => (
+                    <tr key={event.id}>
+                      <td style={{ fontSize: '12px' }}>{formatDateTime(event.created_at)}</td>
+                      <td style={{ fontSize: '12px', fontWeight: 'bold' }}>{event.event_type}</td>
+                      <td style={{ fontSize: '13px' }}>{event.description}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+      {/* --- FIM DA CAMADA DE IMPRESSÃO --- */}
+
+
+      {/* ========================================================================
+        CAMADA 2: A TELA DO SISTEMA (O SUPER MODAL ORIGINAL VALIDADO)
+        Esta é a interface maravilhosa que você já aprovou. Ela se oculta 
+        automaticamente quando a impressão é chamada.
+        ========================================================================
+      */}
       <div 
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[999] transition-opacity no-print flex items-center justify-center p-4 sm:p-6"
+        className={`fixed inset-0 bg-black/80 backdrop-blur-sm z-[999] flex items-center justify-center p-4 sm:p-6 transition-opacity screen-only`} 
         onClick={onClose}
       >
-        {/* SUPER MODAL CENTRALIZADO (Impede o clique de fechar o fundo se clicar dentro dele) */}
         <div 
-          id="print-area"
-          onClick={(e) => e.stopPropagation()}
-          className="w-full max-w-5xl bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl z-[1000] flex flex-col animate-in zoom-in-95 duration-200 max-h-[95vh]"
+          onClick={(e) => e.stopPropagation()} 
+          className="w-full max-w-[1400px] bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl z-[1000] flex flex-col animate-in zoom-in-95 duration-200 h-full max-h-[95vh] overflow-hidden"
         >
           
-          {/* HEADER DO MODAL E MOTOR DE IMPRESSÃO */}
-          <div className="flex items-center justify-between p-6 border-b border-neutral-800 bg-neutral-950/50 rounded-t-2xl print-bg print-border">
-            <div>
-              <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                <FileText className="w-5 h-5 text-emerald-500 no-print" />
-                Relatório Eclesiástico
-              </h2>
-              <p className="text-sm text-neutral-400 mt-1">
-                Documento Oficial de Consulta
-              </p>
+          {/* CABEÇALHO UNIFICADO */}
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between p-5 border-b border-neutral-800 bg-neutral-950/50 rounded-t-2xl gap-4 xl:gap-0">
+            
+            <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-emerald-500" />
+                    Relatório Eclesiástico <span className="text-neutral-500 font-normal hidden md:inline">- Documento Oficial de Consulta</span>
+                </h2>
+
+                <div className="flex items-center bg-neutral-900 p-1 rounded-lg border border-neutral-800">
+                    <button 
+                        onClick={() => setActiveTab('FICHA')}
+                        className={`px-6 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${activeTab === 'FICHA' ? 'bg-neutral-800 text-emerald-500 shadow-sm border border-neutral-700' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                        <User className="w-4 h-4" /> Ficha Cadastral
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('DOSSIE')}
+                        className={`px-6 py-2 rounded-md text-sm font-bold flex items-center gap-2 transition-all ${activeTab === 'DOSSIE' ? 'bg-neutral-800 text-emerald-500 shadow-sm border border-neutral-700' : 'text-neutral-500 hover:text-neutral-300'}`}
+                    >
+                        <Clock className="w-4 h-4" /> Histórico
+                    </button>
+                </div>
             </div>
             
-            <div className="flex items-center gap-3 no-print relative">
+            <div className="flex items-center gap-3 relative self-end xl:self-auto">
               
-              {/* DROPDOWN DE IMPRESSÃO */}
               <div className="relative">
-                <button 
-                  onClick={() => setPrintMenuOpen(!printMenuOpen)} 
-                  className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white rounded-lg transition-colors text-sm font-medium"
-                >
-                  <Printer className="w-4 h-4 text-emerald-500" /> Exportar PDF <ChevronDown className="w-4 h-4 opacity-50" />
+                <button onClick={() => setPrintMenuOpen(!printMenuOpen)} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-600/30 text-emerald-500 rounded-lg transition-colors text-sm font-bold shadow-lg">
+                  <Printer className="w-4 h-4" /> Exportar PDF <ChevronDown className="w-4 h-4 opacity-70" />
                 </button>
 
                 {printMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-neutral-800 border border-neutral-700 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-neutral-800 border border-neutral-700 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
                     <button onClick={() => handlePrint('FICHA')} className="w-full text-left px-4 py-3 text-sm text-white hover:bg-neutral-700 transition-colors flex items-center gap-2">
-                      <User className="w-4 h-4 text-emerald-500" /> Somente Ficha
+                      <User className="w-4 h-4 text-emerald-500" /> Ficha Membro
                     </button>
                     <button onClick={() => handlePrint('DOSSIE')} className="w-full text-left px-4 py-3 text-sm text-white hover:bg-neutral-700 transition-colors flex items-center gap-2 border-t border-neutral-700/50">
-                      <Clock className="w-4 h-4 text-cyan-500" /> Somente Dossiê
+                      <Clock className="w-4 h-4 text-cyan-500" /> Histórico Membro
                     </button>
                     <button onClick={() => handlePrint('AMBOS')} className="w-full text-left px-4 py-3 text-sm text-white hover:bg-neutral-700 transition-colors flex items-center gap-2 border-t border-neutral-700/50 bg-emerald-500/10 hover:bg-emerald-500/20">
-                      <FileText className="w-4 h-4 text-emerald-500" /> Relatório Completo
+                      <FileText className="w-4 h-4 text-emerald-500" /> Histórico Completo
                     </button>
                   </div>
                 )}
               </div>
 
               <div className="w-px h-6 bg-neutral-800 mx-1"></div>
-              
-              <button onClick={onClose} className="p-2 text-neutral-500 hover:text-red-500 hover:bg-neutral-800 rounded-lg transition-colors" title="Fechar Janela">
-                <X className="w-6 h-6" />
+              <button onClick={onClose} className="p-2 text-neutral-500 hover:text-red-500 hover:bg-neutral-800 rounded-lg transition-colors bg-neutral-900 border border-neutral-800" title="Fechar Janela">
+                <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          {/* NAVEGAÇÃO DE ABAS */}
-          <div className="flex border-b border-neutral-800 px-8 pt-4 gap-8 no-print bg-neutral-900">
-            <button 
-              onClick={() => setActiveTab('FICHA')}
-              className={`pb-4 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'FICHA' ? 'border-emerald-500 text-emerald-500' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
-            >
-              <User className="w-4 h-4" /> Ficha Cadastral do Membro
-            </button>
-            <button 
-              onClick={() => setActiveTab('DOSSIE')}
-              className={`pb-4 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'DOSSIE' ? 'border-emerald-500 text-emerald-500' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
-            >
-              <Clock className="w-4 h-4" /> Histórico e Alterações
-            </button>
-          </div>
-
-          {/* CORPO DE DADOS SCROLLÁVEL */}
-          <div className="flex-1 overflow-y-auto p-6 sm:p-8 bg-neutral-950/30 rounded-b-2xl">
+          {/* CORPO DE DADOS SCROLLÁVEL DA TELA */}
+          <div className="flex-1 overflow-y-auto p-6 sm:p-10 bg-neutral-950/30 rounded-b-2xl">
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-3 text-neutral-500 no-print">
+              <div className="flex flex-col items-center justify-center py-20 gap-3 text-neutral-500">
                 <Loader2 className="w-10 h-10 animate-spin text-emerald-500" />
                 <p className="text-sm font-medium">Extraindo dados e consolidando Ficha...</p>
               </div>
             ) : (
               <>
-                {/* ========================================================= */}
-                {/* ABA 1: A NOVA FICHA CADASTRAL (Grid Espelhado do Cadastro)  */}
-                {/* ========================================================= */}
-                {/* A lógica a seguir obedece ao motor PDF: Fica vísivel se a Aba Ficha está ativa, ou se mandamos imprimir a Ficha, ou se mandamos imprimir Ambos */}
-                <div className={`${activeTab === 'FICHA' || printMode === 'FICHA' || printMode === 'AMBOS' ? 'block' : 'hidden no-print'}`}>
+                {/* ABA 1: A FICHA CADASTRAL DA TELA */}
+                <div className={`${activeTab === 'FICHA' ? 'block' : 'hidden'}`}>
                   
-                  {/* CABEÇALHO DA FICHA (Mapeando o Visual Enterprise) */}
-                  <div className="grid grid-cols-12 gap-6 items-center mb-8 bg-neutral-900/50 p-6 rounded-2xl border border-neutral-800 print-bg print-border">
-                    <div className="col-span-12 md:col-span-9 flex flex-col gap-2">
-                      <h1 className="text-3xl font-black text-white uppercase tracking-tight">{profile?.full_name}</h1>
-                      <div className="flex flex-wrap items-center gap-3 mt-1">
-                        <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-xs px-3 py-1 rounded-full uppercase font-bold flex items-center gap-1 print-border">
-                          {profile?.role_name}
-                        </span>
-                        <span className="text-neutral-400 text-sm font-medium flex items-center gap-1 border-l border-neutral-700 pl-3">
-                          <Hash className="w-4 h-4 text-emerald-500"/> Matrícula: <strong className="text-white ml-1">{profile?.registration_number}</strong>
-                        </span>
-                        <span className="text-neutral-400 text-sm font-medium flex items-center gap-1 border-l border-neutral-700 pl-3">
-                          <Clock className="w-4 h-4 text-emerald-500"/> Batizado em: <strong className="text-white ml-1">{formatDate(profile?.baptism_date)}</strong>
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* FOTO À DIREITA */}
-                    <div className="col-span-12 md:col-span-3 flex justify-end">
-                      {profile?.photo_url ? (
-                        <img src={profile.photo_url} alt="Foto" className="w-32 h-32 rounded-xl object-cover border-[3px] border-neutral-800 shadow-xl print-border" />
-                      ) : (
-                        <div className="w-32 h-32 rounded-xl bg-neutral-800 flex items-center justify-center text-neutral-500 border-[3px] border-neutral-700 border-dashed print-border">
-                          <div className="flex flex-col items-center gap-1"><User className="w-8 h-8" /><span className="text-[10px] uppercase font-bold">Sem Foto</span></div>
+                  <div className="grid grid-cols-12 gap-6 pb-6 border-b border-neutral-800 items-center mb-6">
+                    <div className="col-span-12 lg:col-span-5 flex flex-col gap-1">
+                        <h1 className="text-3xl font-black text-white tracking-tight">{profile?.full_name}</h1>
+                        <p className="text-sm text-neutral-400 font-medium mt-1">Visualização de Cadastro</p>
+                        
+                        <div className="flex flex-wrap gap-3 mt-4">
+                            <div className="bg-neutral-950 px-4 py-2 rounded-lg border border-neutral-800">
+                                <span className="text-[9px] uppercase text-neutral-500 font-bold block mb-0.5">Situação Financeira</span>
+                                <div className="text-xs font-bold text-white">
+                                    {profile?.financial_status === 'UP_TO_DATE' ? "🟢 Em Dia" : "🔴 Pendente"}
+                                </div>
+                            </div>
+                            <div className="bg-neutral-950 px-4 py-2 rounded-lg border border-neutral-800">
+                                <span className="text-[9px] uppercase text-neutral-500 font-bold block mb-0.5">Status Eclesiástico</span>
+                                <div className={`text-xs font-bold ${getStatusColor(profile?.ecclesiastical_status)}`}>
+                                    {profile?.ecclesiastical_status === 'ACTIVE' ? 'ATIVO' : profile?.ecclesiastical_status === 'OBSERVATION' ? 'OBSERVAÇÃO' : profile?.ecclesiastical_status === 'INACTIVE' ? 'INATIVO' : 'INAPTO'}
+                                </div>
+                            </div>
                         </div>
-                      )}
+                    </div>
+
+                    <div className="col-span-12 lg:col-span-5 pl-0 mt-4 lg:mt-0">
+                        <div className="grid grid-cols-12 gap-3 items-end">
+                            <div className="col-span-6"><label className="text-[10px] uppercase text-neutral-500 font-bold mb-1 block flex items-center gap-1"><Church className="w-3 h-3 text-emerald-500"/> Igreja Atual</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2 text-white text-xs truncate">{profile?.church_name}</div></div>
+                            <div className="col-span-6"><label className="text-[10px] uppercase text-neutral-500 font-bold mb-1 block flex items-center gap-1"><Briefcase className="w-3 h-3 text-emerald-500"/> Cargo</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2 text-white text-xs truncate">{profile?.role_name}</div></div>
+                            
+                            <div className="col-span-4"><label className="text-[10px] uppercase text-neutral-500 font-bold mb-1 block flex items-center gap-1"><Hash className="w-3 h-3 text-yellow-500"/> Matrícula</label><div className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-yellow-500 font-mono text-center text-xs truncate">{profile?.registration_number}</div></div>
+                            <div className="col-span-4"><label className="text-[10px] uppercase text-neutral-500 font-bold mb-1 block flex items-center gap-1"><Droplets className="w-3 h-3 text-cyan-500"/> Batismo</label><div className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-white text-center text-xs truncate">{formatDate(profile?.baptism_date)}</div></div>
+                            <div className="col-span-4"><label className="text-[10px] uppercase text-neutral-500 font-bold mb-1 block">Tempo</label><div className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-2 text-cyan-500 font-bold text-xs border-l-2 border-l-cyan-500/50 truncate">{calculateTimeBaptized(profile?.baptism_date)}</div></div>
+                        </div>
+                    </div>
+
+                    <div className="col-span-12 lg:col-span-2 flex justify-end pr-4">
+                        <div className="w-32 h-32 rounded-full bg-neutral-900 border-2 border-neutral-700 flex items-center justify-center relative overflow-hidden shadow-xl">
+                            {profile?.photo_url ? (<img src={profile.photo_url} alt="Foto" className="w-full h-full object-cover" />) : (<div className="flex flex-col items-center gap-1 text-neutral-500"><User className="w-8 h-8" /><span className="text-[10px] font-bold uppercase">Sem Foto</span></div>)}
+                        </div>
                     </div>
                   </div>
 
-                  {/* BLOCOS DE DADOS EM GRID (Igual a Tela de Edição) */}
-                  <div className="space-y-6">
-                    
-                    {/* BLOCO: Pessoais e Familiares */}
-                    <div>
-                      <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 pb-3 mb-4 border-b border-neutral-800 print-border">
-                        <User className="w-4 h-4 text-emerald-500" /> Dados Pessoais e Documentação
-                      </h2>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-neutral-900 border border-neutral-800 p-5 rounded-xl print-bg print-border">
-                        <div><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">CPF</p><p className="font-medium text-white">{profile?.cpf || "---"}</p></div>
-                        <div><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">RG</p><p className="font-medium text-white">{profile?.rg ? `${profile.rg} ${profile.rg_issuer}-${profile.rg_state}` : "---"}</p></div>
-                        <div><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">Data Nasc.</p><p className="font-medium text-white">{formatDate(profile?.birth_date)}</p></div>
-                        <div><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">Sexo</p><p className="font-medium text-white">{profile?.gender || "---"}</p></div>
-                        
-                        <div><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">Estado Civil</p><p className="font-medium text-white">{profile?.civil_status || "---"}</p></div>
-                        <div className="col-span-2"><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">Naturalidade</p><p className="font-medium text-white">{profile?.nationality_city ? `${profile.nationality_city}/${profile.nationality_state}` : "---"}</p></div>
-                        <div><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">Escolaridade</p><p className="font-medium text-white">{profile?.schooling || "---"}</p></div>
-
-                        <div className="col-span-2"><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">Profissão</p><p className="font-medium text-white">{profile?.profession || "---"}</p></div>
-                        <div className="col-span-2"><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">Cônjuge</p><p className="font-medium text-white">{profile?.spouse_name || "---"}</p></div>
-                        
-                        <div className="col-span-2"><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">Nome da Mãe</p><p className="font-medium text-white">{profile?.mother_name || "---"}</p></div>
-                        <div className="col-span-2"><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">Nome do Pai</p><p className="font-medium text-white">{profile?.father_name || "---"}</p></div>
-                      </div>
+                  {/* FORMULÁRIO ESPELHADO DA TELA */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-12 gap-3">
+                        <div className="col-span-12 md:col-span-4"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Nome Completo</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white truncate">{profile?.full_name}</div></div>
+                        <div className="col-span-6 md:col-span-2"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Data Nasc.</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white text-center">{formatDate(profile?.birth_date)}</div></div>
+                        <div className="col-span-6 md:col-span-2"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Sexo</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white text-center">{profile?.gender || "---"}</div></div>
+                        <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Estado Civil</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white">{profile?.civil_status || "---"}</div></div>
+                        <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Profissão</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white truncate">{profile?.profession || "---"}</div></div>
                     </div>
 
-                    {/* BLOCO: Contato e Endereço */}
-                    <div>
-                      <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 pb-3 mb-4 border-b border-neutral-800 print-border">
-                        <MapPin className="w-4 h-4 text-emerald-500" /> Contato e Endereço
-                      </h2>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-neutral-900 border border-neutral-800 p-5 rounded-xl print-bg print-border">
-                        <div><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">Telefone / WhatsApp</p><p className="font-medium text-white">{profile?.phone || "---"}</p></div>
-                        <div className="col-span-3"><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">E-mail</p><p className="font-medium text-white">{profile?.email || "---"}</p></div>
-                        
-                        <div className="col-span-4"><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">Endereço Completo</p>
-                          <p className="font-medium text-neutral-300">
-                            {profile?.address ? `${profile.address}, ${profile.number} - ${profile.neighborhood}, ${profile.city}/${profile.state} - CEP: ${profile.zip_code}` : "Não cadastrado"}
-                          </p>
-                        </div>
-                      </div>
+                    <div className="grid grid-cols-12 gap-3">
+                        <div className="col-span-12 md:col-span-4"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">E-mail</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white truncate">{profile?.email || "---"}</div></div>
+                        <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Telefone</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white">{profile?.phone || "---"}</div></div>
+                        <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Naturalidade</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white truncate">{profile?.nationality_city ? `${profile.nationality_city} / ${profile.nationality_state}` : "---"}</div></div>
+                        <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Escolaridade</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white truncate">{profile?.schooling || "---"}</div></div>
                     </div>
 
-                    {/* BLOCO: Institucional */}
-                    <div>
-                      <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 pb-3 mb-4 border-b border-neutral-800 print-border">
-                        <BookOpen className="w-4 h-4 text-emerald-500" /> Histórico Eclesiástico
-                      </h2>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-neutral-900 border border-neutral-800 p-5 rounded-xl print-bg print-border">
-                        <div className="col-span-2"><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">Igreja de Origem (Anterior)</p><p className="font-medium text-white">{profile?.origin_church || "---"}</p></div>
-                        <div><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">Situação Financeira</p><p className="font-medium text-white">{profile?.financial_status === 'UP_TO_DATE' ? "Em Dia" : "Pendente"}</p></div>
-                        <div className="col-span-3"><p className="text-neutral-500 text-[10px] uppercase font-bold mb-1">Congregação Atual Atribuída</p><p className="font-bold text-emerald-500 text-lg">{profile?.church_name}</p></div>
-                      </div>
+                    <div className="grid grid-cols-12 gap-3">
+                        <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">CPF</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white">{profile?.cpf || "---"}</div></div>
+                        <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">RG</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white">{profile?.rg || "---"}</div></div>
+                        <div className="col-span-6 md:col-span-1"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Órgão</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white uppercase text-center">{profile?.rg_issuer || "---"}</div></div>
+                        <div className="col-span-6 md:col-span-1"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">UF</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white uppercase text-center">{profile?.rg_state || "--"}</div></div>
+                        <div className="col-span-12 md:col-span-4"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Igreja de Origem</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white truncate">{profile?.origin_church || "---"}</div></div>
                     </div>
 
+                    <div className="grid grid-cols-12 gap-3">
+                        <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Nome da Mãe</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white truncate">{profile?.mother_name || "---"}</div></div>
+                        <div className="col-span-12 md:col-span-3"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Nome do Pai</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white truncate">{profile?.father_name || "---"}</div></div>
+                        <div className="col-span-12 md:col-span-4"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Cônjuge</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white truncate">{profile?.spouse_name || "---"}</div></div>
+                        <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Casamento</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white text-center">{formatDate(profile?.marriage_date)}</div></div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-3">
+                        <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">CEP</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white">{profile?.zip_code || "---"}</div></div>
+                        <div className="col-span-12 md:col-span-8"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Endereço Completo</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white truncate">{profile?.address || "---"}</div></div>
+                        <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Número</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white">{profile?.number || "---"}</div></div>
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-3">
+                        <div className="col-span-12 md:col-span-5"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Bairro</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white truncate">{profile?.neighborhood || "---"}</div></div>
+                        <div className="col-span-12 md:col-span-5"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">Cidade</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white truncate">{profile?.city || "---"}</div></div>
+                        <div className="col-span-12 md:col-span-2"><label className="text-[10px] uppercase text-neutral-400 font-bold pl-1 mb-1 block">UF</label><div className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-2.5 text-sm text-white uppercase text-center">{profile?.state || "--"}</div></div>
+                    </div>
                   </div>
                 </div>
 
-                {/* ========================================================= */}
-                {/* ABA 2: O DOSSIÊ (LINHA DO TEMPO) */}
-                {/* ========================================================= */}
-                {/* Se a impressão for 'AMBOS', aplicamos o 'page-break' para o Dossiê cair na Página 2 de forma limpa. */}
-                <div className={`${activeTab === 'DOSSIE' || printMode === 'DOSSIE' || printMode === 'AMBOS' ? 'block' : 'hidden no-print'} ${printMode === 'AMBOS' ? 'page-break' : ''}`}>
-                  
-                  {/* Título de Separação na Impressão (Apenas visível no papel) */}
-                  <div className="hidden print:flex items-center gap-3 pb-4 mb-8 border-b-2 border-black">
-                    <Clock className="w-6 h-6 text-black" />
-                    <div>
-                      <h3 className="text-xl font-black uppercase text-black">Dossiê Eclesiástico - Linha do Tempo</h3>
-                      <p className="text-sm text-gray-600 font-bold mt-1">Membro: {profile?.full_name} | Matrícula: {profile?.registration_number}</p>
-                    </div>
-                  </div>
-
+                {/* ABA 2: O DOSSIÊ DA TELA */}
+                <div className={`${activeTab === 'DOSSIE' ? 'block' : 'hidden'}`}>
                   {events.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 gap-2 text-neutral-500 text-center">
-                      <Clock className="w-12 h-12 opacity-20" />
-                      <p className="text-base font-medium text-neutral-400">Nenhum evento registrado no histórico.</p>
-                      <p className="text-xs">Alterações de cargo, status ou igreja aparecerão aqui.</p>
+                    <div className="flex flex-col items-center justify-center h-40 gap-2 text-neutral-500 text-center">
+                      <Clock className="w-10 h-10 opacity-20" />
+                      <p className="text-sm font-medium">Nenhum evento registrado no histórico.</p>
                     </div>
                   ) : (
-                    <div className="relative border-l-2 border-neutral-800 ml-4 space-y-10 py-6 print-border">
+                    <div className="relative border-l-2 border-neutral-800 ml-4 space-y-10 py-2">
                       {events.map((event) => {
                         const style = getEventStyle(event.event_type);
                         return (
                           <div key={event.id} className="relative pl-8">
-                            {/* Ponto / Ícone da Linha */}
-                            <div className={`absolute -left-5 top-0 w-10 h-10 rounded-full border-4 border-neutral-900 bg-neutral-900 flex items-center justify-center shadow-lg print-bg print-border z-10`}>
+                            <div className={`absolute -left-5 top-0 w-10 h-10 rounded-full border-4 border-neutral-900 flex items-center justify-center shadow-lg ${style.bg} ${style.border}`}>
                               {style.icon}
                             </div>
-                            
-                            {/* Conteúdo do Evento */}
                             <div className="flex flex-col gap-2 pt-1">
                               <span className="text-xs font-black text-neutral-500 uppercase tracking-wider flex items-center gap-2">
                                 {formatDateTime(event.created_at)}
                                 <span className={`px-2 py-0.5 rounded text-[9px] ${style.bg} ${style.border} border`}>{event.event_type}</span>
                               </span>
-                              <div className="bg-neutral-900 border border-neutral-800 p-5 rounded-xl shadow-md print-bg print-border">
-                                <p className="text-base text-neutral-200 leading-relaxed font-medium">
+                              <div className="bg-neutral-900 border border-neutral-800 p-5 rounded-xl shadow-md">
+                                <p className="text-sm text-neutral-300 leading-relaxed font-medium">
                                   {event.description}
                                 </p>
                               </div>

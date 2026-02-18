@@ -1,5 +1,5 @@
 ﻿PROJETO: IGREJA WEB OS
-Atualizado em: 02/16/2026 17:58:53
+Atualizado em: 02/16/2026 23:37:40
 ---
   DIR: web
   DIR: web_backup_20260202_2344_MembrosV1
@@ -87,6 +87,8 @@ Atualizado em: 02/16/2026 17:58:53
               FILE: page.tsx
         DIR: dashboard
           FILE: BirthdayCard.tsx
+          FILE: MemberTimelineModal.tsx
+          FILE: QuickTimelineSearch.tsx
         FILE: index.ts
         DIR: supabase
         FILE: cn.ts

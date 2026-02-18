@@ -1,43 +1,113 @@
+import { Settings, Church, Map, Briefcase, GraduationCap, Heart, Users, MapPin, UserSquare2, ChevronRight, Plus } from "lucide-react";
+import DashboardCardBase from "@/components/dashboard/DashboardCardBase";
 import Link from "next/link";
-import { Cpu, Network, Waypoints, ShieldCheck, Terminal, Library, GitMerge, Fingerprint, Radar } from "lucide-react";
 
 export default function ConfiguracoesPage() {
-  const modulos = [
-    { title: "Igrejas", desc: "Gestão de malha eclesiástica", href: "/dashboard/igrejas", icon: Network, color: "text-emerald-500" },
-    
-    // INJEÇÃO CORRETIVA: A rota de setores era /igrejas e não /setores solto.
-    { title: "Setores", desc: "Roteamento de áreas", href: "/dashboard/igrejas", icon: Waypoints, color: "text-blue-500" },
-    
-    { title: "Cargos", desc: "Níveis de autoridade", href: "/dashboard/configuracoes/cargos", icon: ShieldCheck, color: "text-purple-500" },
-    { title: "Profissões", desc: "Matriz de atuação", href: "/dashboard/configuracoes/profissoes", icon: Terminal, color: "text-amber-500" },
-    { title: "Escolaridade", desc: "Base de conhecimento", href: "/dashboard/configuracoes/escolaridade", icon: Library, color: "text-indigo-500" },
-    { title: "Estado Civil", desc: "Vínculos e uniões", href: "/dashboard/configuracoes/estado-civil", icon: GitMerge, color: "text-pink-500" },
-    { title: "Gênero", desc: "Identificação única", href: "/dashboard/configuracoes/genero", icon: Fingerprint, color: "text-cyan-500" },
-    { title: "Regiões do DF", desc: "Mapeamento territorial", href: "/dashboard/configuracoes/regioes-df", icon: Radar, color: "text-rose-500" },
-  ];
-
   return (
-    <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center gap-3 pb-6 border-b border-neutral-800">
-        <Cpu className="w-8 h-8 text-neutral-400" />
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-[1600px] mx-auto pb-10">
+      
+      {/* CABEÇALHO DA PÁGINA */}
+      <div className="flex items-center gap-4 border-b border-neutral-800 pb-5">
+        <div className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-emerald-500 shadow-sm">
+          <Settings className="w-6 h-6" />
+        </div>
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">System Settings</h1>
-          <p className="text-sm text-neutral-400">Gerencie as tabelas auxiliares e os dados mestres da plataforma.</p>
+          <h1 className="text-2xl font-black text-white tracking-tight uppercase">System Settings</h1>
+          <p className="text-sm text-neutral-400 font-medium">Gerencie as tabelas auxiliares e os dados mestres da plataforma.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {modulos.map((mod) => (
-          <Link key={mod.title} href={mod.href} className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 hover:border-neutral-600 transition-all group flex items-start gap-4 shadow-sm hover:shadow-black/50">
-            <div className={`p-3 rounded-lg bg-neutral-950 border border-neutral-800 group-hover:scale-110 transition-transform ${mod.color}`}>
-              <mod.icon className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-white font-bold text-base group-hover:text-emerald-500 transition-colors">{mod.title}</h3>
-              <p className="text-neutral-500 text-xs mt-1">{mod.desc}</p>
-            </div>
+      {/* GRID DE CARDS USANDO O MOLDE OFICIAL */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+        
+        {/* 1. IGREJAS -> Rota Corrigida */}
+        <DashboardCardBase
+          icon={<Church className="w-7 h-7" />}
+          title="IGREJAS"
+          subtitle="gerencie congregações e sub-congregações"
+        >
+          <Link href="/dashboard/igrejas/nova" className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white p-3 rounded-xl transition-colors flex items-center justify-between px-5 text-xs font-bold shadow-md uppercase">
+            CADASTRAR <Plus className="w-4 h-4 text-emerald-500" />
           </Link>
-        ))}
+        </DashboardCardBase>
+
+        {/* 2. SETORES -> Rota Corrigida */}
+        <DashboardCardBase
+          icon={<Map className="w-7 h-7" />}
+          title="SETORES"
+          subtitle="organização geográfica e pastoral"
+        >
+          <Link href="/dashboard/igrejas/setores/novo" className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white p-3 rounded-xl transition-colors flex items-center justify-between px-5 text-xs font-bold shadow-md uppercase">
+            CADASTRAR <Plus className="w-4 h-4 text-emerald-500" />
+          </Link>
+        </DashboardCardBase>
+
+        {/* 3. CARGOS */}
+        <DashboardCardBase
+          icon={<Briefcase className="w-7 h-7" />}
+          title="CARGOS"
+          subtitle="funções eclesiásticas e administrativas"
+        >
+          <Link href="/dashboard/configuracoes/cargos" className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white p-3 rounded-xl transition-colors flex items-center justify-between px-5 text-xs font-bold shadow-md uppercase">
+            CADASTRAR <Plus className="w-4 h-4 text-emerald-500" />
+          </Link>
+        </DashboardCardBase>
+
+        {/* 4. PROFISSÕES */}
+        <DashboardCardBase
+          icon={<UserSquare2 className="w-7 h-7" />}
+          title="PROFISSÕES"
+          subtitle="cadastro de ocupações profissionais"
+        >
+          <Link href="/dashboard/configuracoes/profissoes" className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white p-3 rounded-xl transition-colors flex items-center justify-between px-5 text-xs font-bold shadow-md uppercase">
+            CADASTRAR <Plus className="w-4 h-4 text-emerald-500" />
+          </Link>
+        </DashboardCardBase>
+
+        {/* 5. ESCOLARIDADES */}
+        <DashboardCardBase
+          icon={<GraduationCap className="w-7 h-7" />}
+          title="ESCOLARIDADES"
+          subtitle="níveis de formação acadêmica"
+        >
+          <Link href="/dashboard/configuracoes/escolaridades" className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white p-3 rounded-xl transition-colors flex items-center justify-between px-5 text-xs font-bold shadow-md uppercase">
+            CADASTRAR <Plus className="w-4 h-4 text-emerald-500" />
+          </Link>
+        </DashboardCardBase>
+
+        {/* 6. ESTADO CIVIL */}
+        <DashboardCardBase
+          icon={<Heart className="w-7 h-7" />}
+          title="ESTADO CÍVIL"
+          subtitle="situação conjugal dos membros"
+        >
+          <Link href="/dashboard/configuracoes/estado-civil" className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white p-3 rounded-xl transition-colors flex items-center justify-between px-5 text-xs font-bold shadow-md uppercase">
+            CADASTRAR <Plus className="w-4 h-4 text-emerald-500" />
+          </Link>
+        </DashboardCardBase>
+
+        {/* 7. GÊNERO */}
+        <DashboardCardBase
+          icon={<Users className="w-7 h-7" />}
+          title="GÊNERO"
+          subtitle="classificação oficial do sistema"
+        >
+          <Link href="/dashboard/configuracoes/genero" className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white p-3 rounded-xl transition-colors flex items-center justify-between px-5 text-xs font-bold shadow-md uppercase">
+            CADASTRAR <Plus className="w-4 h-4 text-emerald-500" />
+          </Link>
+        </DashboardCardBase>
+
+        {/* 8. REGIÕES DF */}
+        <DashboardCardBase
+          icon={<MapPin className="w-7 h-7" />}
+          title="REGIÕES DF"
+          subtitle="mapeamento de regiões e cidades"
+        >
+          <Link href="/dashboard/configuracoes/regioes-df" className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white p-3 rounded-xl transition-colors flex items-center justify-between px-5 text-xs font-bold shadow-md uppercase">
+            CADASTRAR <Plus className="w-4 h-4 text-emerald-500" />
+          </Link>
+        </DashboardCardBase>
+
       </div>
     </div>
   );
