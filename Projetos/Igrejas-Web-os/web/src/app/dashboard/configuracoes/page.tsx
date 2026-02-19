@@ -1,4 +1,4 @@
-import { Settings, Church, Map, Briefcase, GraduationCap, Heart, Users, MapPin, UserSquare2, ChevronRight, Plus } from "lucide-react";
+import { Settings, Church, Map, Briefcase, GraduationCap, Heart, Users, MapPin, UserSquare2, Plus } from "lucide-react";
 import DashboardCardBase from "@/components/dashboard/DashboardCardBase";
 import Link from "next/link";
 
@@ -20,24 +20,24 @@ export default function ConfiguracoesPage() {
       {/* GRID DE CARDS USANDO O MOLDE OFICIAL */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
         
-        {/* 1. IGREJAS -> Rota Corrigida */}
+        {/* 1. IGREJAS -> Parâmetro de origem adicionado */}
         <DashboardCardBase
           icon={<Church className="w-7 h-7" />}
           title="IGREJAS"
           subtitle="gerencie congregações e sub-congregações"
         >
-          <Link href="/dashboard/igrejas/nova" className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white p-3 rounded-xl transition-colors flex items-center justify-between px-5 text-xs font-bold shadow-md uppercase">
+          <Link href="/dashboard/igrejas/nova?origem=configuracoes" className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white p-3 rounded-xl transition-colors flex items-center justify-between px-5 text-xs font-bold shadow-md uppercase">
             CADASTRAR <Plus className="w-4 h-4 text-emerald-500" />
           </Link>
         </DashboardCardBase>
 
-        {/* 2. SETORES -> Rota Corrigida */}
+        {/* 2. SETORES -> Parâmetro de origem adicionado */}
         <DashboardCardBase
           icon={<Map className="w-7 h-7" />}
           title="SETORES"
           subtitle="organização geográfica e pastoral"
         >
-          <Link href="/dashboard/igrejas/setores/novo" className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white p-3 rounded-xl transition-colors flex items-center justify-between px-5 text-xs font-bold shadow-md uppercase">
+          <Link href="/dashboard/igrejas/setores/novo?origem=configuracoes" className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white p-3 rounded-xl transition-colors flex items-center justify-between px-5 text-xs font-bold shadow-md uppercase">
             CADASTRAR <Plus className="w-4 h-4 text-emerald-500" />
           </Link>
         </DashboardCardBase>
@@ -64,13 +64,13 @@ export default function ConfiguracoesPage() {
           </Link>
         </DashboardCardBase>
 
-        {/* 5. ESCOLARIDADES */}
+        {/* 5. ESCOLARIDADES -> Rota corrigida para o singular (/escolaridade) */}
         <DashboardCardBase
           icon={<GraduationCap className="w-7 h-7" />}
           title="ESCOLARIDADES"
           subtitle="níveis de formação acadêmica"
         >
-          <Link href="/dashboard/configuracoes/escolaridades" className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white p-3 rounded-xl transition-colors flex items-center justify-between px-5 text-xs font-bold shadow-md uppercase">
+          <Link href="/dashboard/configuracoes/escolaridade" className="w-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white p-3 rounded-xl transition-colors flex items-center justify-between px-5 text-xs font-bold shadow-md uppercase">
             CADASTRAR <Plus className="w-4 h-4 text-emerald-500" />
           </Link>
         </DashboardCardBase>

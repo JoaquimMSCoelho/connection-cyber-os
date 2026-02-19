@@ -1,5 +1,5 @@
 ﻿PROJETO: IGREJA WEB OS
-Atualizado em: 02/17/2026 23:49:33
+Atualizado em: 02/18/2026 23:59:49
 ---
   DIR: web
   DIR: web_backup_20260202_2344_MembrosV1
@@ -50,6 +50,7 @@ Atualizado em: 02/17/2026 23:49:33
           DIR: configuracoes
           DIR: igrejas
           DIR: membros
+          DIR: ocorrencias
           FILE: page.tsx
             DIR: cargos
             DIR: escolaridade
@@ -90,6 +91,7 @@ Atualizado em: 02/17/2026 23:49:33
               FILE: form.tsx
               FILE: old actions.ts
               FILE: page.tsx
+            FILE: actions.ts
         DIR: dashboard
           FILE: BirthdayCard.tsx
           FILE: DashboardCardBase.tsx
@@ -140,3 +142,7 @@ Atualizado em: 02/17/2026 23:49:33
     FILE: Ficha Cadastral.pdf
     FILE: Histórico Completo.pdf
     FILE: Histórico membro.pdf
+    FILE: IgrejasWeb OS.pdf
+    FILE: IgrejasWeb OS2.pdf
+    FILE: IgrejasWeb OS3.pdf
+    FILE: RELATÓRIO DE OCORRÊNCIAS.pdf
