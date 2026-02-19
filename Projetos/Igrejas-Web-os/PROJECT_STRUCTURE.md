@@ -1,8 +1,9 @@
 ﻿PROJETO: IGREJA WEB OS
-Atualizado em: 02/16/2026 23:37:40
+Atualizado em: 02/17/2026 23:49:33
 ---
   DIR: web
   DIR: web_backup_20260202_2344_MembrosV1
+  DIR: ZZ-testes
   FILE: AUDIT_STRUCTURE.ps1
   FILE: BLUEPRINT_IgrejaWebOS.md
   FILE: CHECK_IgrejaWebOS.ps1
@@ -18,6 +19,7 @@ Atualizado em: 02/16/2026 23:37:40
   FILE: START_IgrejaWebOS.ps1
   FILE: START_SESSION.ps1
   FILE: ZZ-SISTEMA MEMBROS WEB - atualização (1) (3).pdf
+  FILE: ZZ-SISTEMA MEMBROS WEB - atualização (1) (3).pdf.docx
     DIR: public
     DIR: src
     FILE: .env.local
@@ -53,6 +55,7 @@ Atualizado em: 02/16/2026 23:37:40
             DIR: escolaridade
             DIR: estado-civil
             DIR: genero
+            DIR: ocorrencias
             DIR: profissoes
             DIR: regioes-df
             FILE: actions.ts
@@ -60,6 +63,8 @@ Atualizado em: 02/16/2026 23:37:40
               FILE: page.tsx
               FILE: page.tsx
               FILE: page.tsx
+              FILE: page.tsx
+              FILE: actions.ts
               FILE: page.tsx
               FILE: page.tsx
               FILE: page.tsx
@@ -87,7 +92,10 @@ Atualizado em: 02/16/2026 23:37:40
               FILE: page.tsx
         DIR: dashboard
           FILE: BirthdayCard.tsx
+          FILE: DashboardCardBase.tsx
+          FILE: MemberRegistrationCard.tsx
           FILE: MemberTimelineModal.tsx
+          FILE: OccurrenceSchedulerCard.tsx
           FILE: QuickTimelineSearch.tsx
         FILE: index.ts
         DIR: supabase
@@ -129,3 +137,6 @@ Atualizado em: 02/16/2026 23:37:40
         FILE: cn.ts
           FILE: client.ts
           FILE: server.ts
+    FILE: Ficha Cadastral.pdf
+    FILE: Histórico Completo.pdf
+    FILE: Histórico membro.pdf
