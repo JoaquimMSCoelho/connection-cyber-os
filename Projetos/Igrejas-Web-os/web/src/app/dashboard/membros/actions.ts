@@ -13,9 +13,12 @@ function parseDateBrToIso(dateStr: string | null | undefined): string | null {
   return `${year}-${month}-${day}`;
 }
 
-// --- AÇÃO 1: CRIAR NOVO MEMBRO (COM FOTO E VALIDAÇÃO) ---
+// --- AÇÃO 1: CRIAR NOVO MEMBRO (COM FOTO, VALIDAÇÃO E RETORNO INTELIGENTE) ---
 export async function createMemberAction(formData: FormData) {
   const supabase = await createClient();
+
+  // INJEÇÃO FUNCIONAL: Leitura do Rastro de Navegação (Stateful Routing)
+  const origem = formData.get("origem") as string;
 
   // 1. Identificação e Pessoais
   const full_name = formData.get("full_name") as string;
@@ -140,7 +143,13 @@ export async function createMemberAction(formData: FormData) {
   }
 
   revalidatePath("/dashboard/membros");
-  redirect("/dashboard/membros");
+  
+  // INJEÇÃO FUNCIONAL: A Curva de Redirecionamento (Retorno Inteligente)
+  if (origem === 'dashboard') {
+    redirect("/dashboard");
+  } else {
+    redirect("/dashboard/membros");
+  }
 }
 
 // --- AÇÃO 2: ATUALIZAR MEMBRO (COM FOTO E VALIDAÇÃO) ---

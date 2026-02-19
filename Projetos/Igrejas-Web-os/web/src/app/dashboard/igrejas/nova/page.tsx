@@ -6,7 +6,7 @@ import Link from "next/link";
 // FUSÃO TÉCNICA: Importação absoluta blindada
 import { createChurchAction } from "@/app/dashboard/igrejas/actions";
 import { useFormStatus } from "react-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 
 // Botão de Submit Isolado
 function SubmitButton() {
@@ -33,7 +33,16 @@ function SubmitButton() {
   );
 }
 
-export default function NewChurchPage() {
+// INJEÇÃO FUNCIONAL: Preparando a página para receber parâmetros de URL
+interface PageProps {
+  searchParams: Promise<{ origem?: string }>;
+}
+
+export default function NewChurchPage({ searchParams }: PageProps) {
+  // Desempacotando a Promise do Next.js 15
+  const resolvedParams = use(searchParams);
+  const origem = resolvedParams.origem || 'igrejas';
+
   const [sectors, setSectors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,6 +62,9 @@ export default function NewChurchPage() {
     fetchSectors();
   }, []);
 
+  // Lógica dinâmica do botão voltar
+  const backLink = origem === 'configuracoes' ? '/dashboard/configuracoes' : '/dashboard/igrejas';
+
   return (
     <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
@@ -63,8 +75,9 @@ export default function NewChurchPage() {
           <p className="text-neutral-400">Cadastre uma nova congregação no sistema.</p>
         </div>
         <Link
-          href="/dashboard/igrejas"
+          href={backLink}
           className="p-2 bg-neutral-900 border border-neutral-800 rounded-lg hover:bg-neutral-800 hover:text-white text-neutral-400 transition-colors"
+          title="Voltar"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
@@ -73,6 +86,9 @@ export default function NewChurchPage() {
       {/* FORMULÁRIO */}
       <form action={createChurchAction} className="bg-neutral-900/30 border border-neutral-800 rounded-xl p-6 md:p-8 space-y-6">
         
+        {/* INJEÇÃO FUNCIONAL: Campo oculto para viajar até o servidor */}
+        <input type="hidden" name="origem" value={origem} />
+
         {/* SEÇÃO 1: IDENTIFICAÇÃO */}
         <div className="space-y-4">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider border-b border-neutral-800 pb-2">Identificação</h2>

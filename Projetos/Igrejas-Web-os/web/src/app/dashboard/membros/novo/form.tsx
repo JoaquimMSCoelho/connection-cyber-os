@@ -43,7 +43,8 @@ function SubmitButton({ formDisabled }: { formDisabled?: boolean }) {
   );
 }
 
-export default function NewMemberForm() {
+// INJEÇÃO FUNCIONAL: Recebendo a prop "origem" do Server Component
+export default function NewMemberForm({ origem = 'membros' }: { origem?: string }) {
   const [churches, setChurches] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [states, setStates] = useState<any[]>([]);
@@ -241,15 +242,22 @@ export default function NewMemberForm() {
     }
   };
 
+  // INJEÇÃO FUNCIONAL: Lógica dinâmica do botão voltar
+  const backLink = origem === 'dashboard' ? '/dashboard' : '/dashboard/membros';
+  const backText = origem === 'dashboard' ? 'Voltar para Visão Geral' : 'Voltar para Gestão';
+
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       
       {/* HEADER COMPACTADO À DIREITA COM NOVA MALHA GEOMÉTRICA */}
       <div className="grid grid-cols-12 gap-6 pb-6 border-b border-neutral-800 items-center">
         
-        {/* LADO ESQUERDO: Título e Voltar (Fonte reduzida para text-lg / 18px) */}
+        {/* LADO ESQUERDO: Título e Voltar */}
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-4">
-            <Link href="/dashboard/membros" className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors text-sm w-fit"><ArrowLeft className="w-4 h-4" /> Voltar para Gestão</Link>
+            {/* CORREÇÃO DO ERRO 404/SINTAXE: As aspas e variáveis do Link estão rigidamente construídas */}
+            <Link href={backLink} className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors text-sm w-fit">
+              <ArrowLeft className="w-4 h-4" /> {backText}
+            </Link>
             <div><h1 className="text-lg font-bold text-white tracking-tight">Novo Membro</h1><p className="text-sm text-neutral-400">Preencha a ficha cadastral.</p></div>
         </div>
 
@@ -294,7 +302,7 @@ export default function NewMemberForm() {
             </div>
         </div>
 
-        {/* EXTREMA DIREITA: Foto cravada nas colunas 11 e 12 */}
+        {/* EXTREMA DIREITA: Foto */}
         <div className="col-span-12 lg:col-span-2 lg:col-start-11 flex justify-end pr-4">
             <div className="w-32 h-32 rounded-full bg-neutral-900 border-2 border-dashed border-neutral-700 flex items-center justify-center relative overflow-hidden group hover:border-emerald-500 transition-colors shadow-xl">
                 {formData.photo_url ? <img src={formData.photo_url} alt="Foto" className="w-full h-full object-cover" /> : <div className="flex flex-col items-center gap-1 text-neutral-500 group-hover:text-emerald-500">{uploading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Camera className="w-8 h-8" />}<span className="text-[10px] font-bold uppercase">Foto</span></div>}
@@ -332,6 +340,9 @@ export default function NewMemberForm() {
         <input type="hidden" name="church_id" value={formData.church_id} />
         <input type="hidden" name="role_id" value={formData.role_id} />
         <input type="hidden" name="registration_number" value={formData.registration_number} />
+        
+        {/* INJEÇÃO FUNCIONAL: Disparando a memória para o servidor */}
+        <input type="hidden" name="origem" value={origem} />
 
         <div className="space-y-4">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 pb-2"><User className="w-4 h-4 text-emerald-500" /> Dados Pessoais</h2>

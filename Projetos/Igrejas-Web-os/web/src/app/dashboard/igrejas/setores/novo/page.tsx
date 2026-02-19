@@ -5,6 +5,7 @@ import Link from "next/link";
 // FUSÃO TÉCNICA: Importação absoluta blindada
 import { createSectorAction } from "@/app/dashboard/igrejas/actions";
 import { useFormStatus } from "react-dom";
+import { use } from "react";
 
 // Componente do Botão de Submit isolado para usar o hook useFormStatus
 // Necessário para acessar o estado 'pending' do formulário pai
@@ -32,7 +33,19 @@ function SubmitButton() {
   );
 }
 
-export default function NewSectorPage() {
+// INJEÇÃO FUNCIONAL: Preparando a página para receber parâmetros de URL
+interface PageProps {
+  searchParams: Promise<{ origem?: string }>;
+}
+
+export default function NewSectorPage({ searchParams }: PageProps) {
+  // Desempacotando a Promise do Next.js 15
+  const resolvedParams = use(searchParams);
+  const origem = resolvedParams.origem || 'igrejas';
+
+  // Lógica dinâmica do botão voltar
+  const backLink = origem === 'configuracoes' ? '/dashboard/configuracoes' : '/dashboard/igrejas';
+
   return (
     <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
@@ -43,8 +56,9 @@ export default function NewSectorPage() {
           <p className="text-neutral-400">Crie uma nova divisão administrativa.</p>
         </div>
         <Link
-          href="/dashboard/igrejas"
+          href={backLink}
           className="p-2 bg-neutral-900 border border-neutral-800 rounded-lg hover:bg-neutral-800 hover:text-white text-neutral-400 transition-colors"
+          title="Voltar"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
@@ -54,6 +68,9 @@ export default function NewSectorPage() {
       {/* O action aponta para a Server Action importada */}
       <form action={createSectorAction} className="bg-neutral-900/30 border border-neutral-800 rounded-xl p-6 md:p-8 space-y-6">
         
+        {/* INJEÇÃO FUNCIONAL: Campo oculto para viajar até o servidor */}
+        <input type="hidden" name="origem" value={origem} />
+
         {/* Nome do Setor */}
         <div className="space-y-2">
           <label className="text-xs font-medium text-neutral-400 uppercase flex items-center gap-2">

@@ -8,6 +8,9 @@ import { redirect } from "next/navigation";
 export async function createChurchAction(formData: FormData) {
   const supabase = await createClient();
 
+  // INJEÇÃO FUNCIONAL: Lendo a origem do Roteamento com Estado
+  const origem = formData.get("origem") as string;
+
   // 1. Captura os dados
   const name = formData.get("name") as string;
   const sector_id = formData.get("sector_id") as string;
@@ -41,7 +44,13 @@ export async function createChurchAction(formData: FormData) {
   }
 
   revalidatePath("/dashboard/igrejas");
-  redirect("/dashboard/igrejas");
+  
+  // INJEÇÃO FUNCIONAL: Bifurcação dinâmica
+  if (origem === 'configuracoes') {
+      redirect("/dashboard/configuracoes");
+  } else {
+      redirect("/dashboard/igrejas");
+  }
 }
 
 // --- AÇÃO 2: ATUALIZAR IGREJA (NOVA ROTINA) ---
@@ -90,6 +99,8 @@ export async function updateChurchAction(formData: FormData) {
 export async function createSectorAction(formData: FormData) {
   const supabase = await createClient();
 
+  // INJEÇÃO FUNCIONAL: Lendo a origem do Roteamento com Estado (Para Setores)
+  const origem = formData.get("origem") as string;
   const name = formData.get("name") as string;
 
   if (!name) {
@@ -110,9 +121,14 @@ export async function createSectorAction(formData: FormData) {
   }
 
   revalidatePath("/dashboard/igrejas");
-  redirect("/dashboard/igrejas");
+  
+  // INJEÇÃO FUNCIONAL: Bifurcação dinâmica para setores
+  if (origem === 'configuracoes') {
+      redirect("/dashboard/configuracoes");
+  } else {
+      redirect("/dashboard/igrejas");
+  }
 }
-// ... (mantenha createChurchAction, updateChurchAction e createSectorAction como estão)
 
 // --- AÇÃO 4: ARQUIVAR IGREJA (SOFT DELETE) ---
 export async function archiveChurchAction(formData: FormData) {
